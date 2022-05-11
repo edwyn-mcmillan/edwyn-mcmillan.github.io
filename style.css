@@ -23,6 +23,20 @@ a {
   color: rgb(255, 255, 244);
 }
 
+h2 {
+  position: relative;
+  top: 15vh;
+  text-align: center;
+  color: rgb(255, 255, 244);
+}
+
+h5 {
+  position: relative;
+  top: 15vh;
+  text-align: center;
+  color: rgb(255, 255, 244);
+}
+
 .contents-wrapper {
   position: fixed;
   top: 10vh;
@@ -59,7 +73,11 @@ a {
   top: 20vh;
 }
 
-.gallery-contents{
+.list-heading {
+  font-size: 1.3rem;
+}
+
+.gallery-contents {
   width: 50vw;
   position: relative;
   top: 10vh;
@@ -73,4 +91,36 @@ a {
   object-fit: contain;
   max-width: 70vw;
   padding-bottom: 80px;
+}
+
+.project-wrapper {
+  position: relative;
+  text-align: center;
+  top: 20vh;
+  background-color: rgb(255, 255, 244);
+  padding-top: 80px;
+  width: 80vw;
+  left: 10vw;
+}
+
+.project-wrapper > img {
+  height: 100%;
+  width: 100%;
+  object-fit: contain;
+  max-width: 70vw;
+  padding-bottom: 10vw;
+}
+
+.project-wrapper > .square {
+  max-width: 40vw;
+  max-height: 60vh;
+  padding-left: 30px;
+  padding-right: 30px;
+}
+
+.project-wrapper > .wide {
+  max-width: 70vw;
+  max-height: 60vh;
+  padding-left: 30px;
+  padding-right: 30px;
 }
