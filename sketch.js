@@ -1,4 +1,4 @@
-const NUM_FRAMES = 38;
+const NUM_FRAMES = 50;
 
 let marginX, marginY; 
 let pg;
@@ -65,21 +65,19 @@ function draw() {
   pg.text("Edwyn McMillan", gw / 2, gh / 2);
 
   if (windowWidth < windowHeight) {
-    image(pg, width / 100, height / 20);
+    image(pg, width / 100, height / 40);
   } else {
-    image(pg, (width / 2) - (gw / 2), height / 20);
+    image(pg, (width / 2) - (gw / 2), height / 40);
   }
 }
 
 function periodic(p_, seed_, x_, y_) {
   // loop through perlin noise space
-  // let radius = 0.5;
   let radius = map(windowWidth, 545, 2560, 0.6, 0.2);
-
   let scale = 0.018;
   return 1.0 * noise.noise4D(seed_ + radius * cos(TWO_PI * p_), radius * sin(TWO_PI * p_), scale * x_, scale * y_);
 }
 
 function offset(x_, y_) {
-  return 0.015 * dist(x_, y_, windowWidth / 2, windowHeight / 2);
+  return 0.013 * dist(x_, y_, windowWidth / 2, windowHeight / 2);
 }
