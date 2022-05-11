@@ -36,19 +36,20 @@ function draw() {
 
   // ---- noise waves ----
   let t = 1.0 * frameCount / NUM_FRAMES;
-  let m = 115;
+  let m = 90;
+
 
   marginX = windowWidth / 4.2;
   marginY = windowHeight / 2.5;
 
-  stroke(255, 255, 244, 70);
-  strokeWeight(1.5);
+  stroke(255, 255, 244, 80);
+  strokeWeight(1.8);
   for (let i = 0; i < m; i++){
     for (let j = 0; j < m; j++){
       let x = map(i, 0, m - 1, marginX, windowWidth - marginX);
       let y = map(j, 0, m - 1, marginY, windowHeight - marginY)
       let dx = 20.0 * periodic(t - offset(x, y), 1, x, y);
-      let dy = 20.0 * periodic(t - offset(x, y), 123, x, y);
+      let dy = 20.0 * periodic(t - offset(x, y), 200, x, y);
       point(x + dx, y + dy);
     }
   }
@@ -63,17 +64,18 @@ function draw() {
   pg.textAlign(CENTER, CENTER);
   pg.text("Edwyn McMillan", gw / 2, gh / 2);
 
-  if (windowWidth >= windowHeight) {
-    image(pg, width / 20, height / 20);
+  if (windowWidth < windowHeight) {
+    image(pg, width / 100, height / 20);
   } else {
     image(pg, (width / 2) - (gw / 2), height / 20);
   }
-
 }
 
 function periodic(p_, seed_, x_, y_) {
   // loop through perlin noise space
-  let radius = 1.3;
+  // let radius = 0.5;
+  let radius = map(windowWidth, 545, 2560, 0.6, 0.2);
+
   let scale = 0.018;
   return 1.0 * noise.noise4D(seed_ + radius * cos(TWO_PI * p_), radius * sin(TWO_PI * p_), scale * x_, scale * y_);
 }
