@@ -1,14 +1,62 @@
 const NUM_FRAMES = 50;
 
-let marginX, marginY; 
+let marginX, marginY;
 let pg;
 let myFont;
+
+const specialChar = [
+  "❁",
+  "✺",
+  "❃",
+  "✾",
+  "✿",
+  "❀",
+  "〒",
+  "の",
+  "ō",
+  "▲",
+  "↕",
+  "▒",
+  "✙",
+  "◈",
+  "E",
+  "d",
+  "w",
+  "y",
+  "n",
+  " ",
+  "M",
+  "c",
+  "M",
+  "i",
+  "l",
+  "l",
+  "a",
+  "n",
+];
+
+const nameArr = [
+  "E",
+  "d",
+  "w",
+  "y",
+  "n",
+  " ",
+  "M",
+  "c",
+  "M",
+  "i",
+  "l",
+  "l",
+  "a",
+  "n"
+]
 
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
 }
 
-function preload() { 
+function preload() {
   myFont = loadFont("./font/FIRACODE-LIGHT.TTF");
 }
 
@@ -22,32 +70,28 @@ function setup() {
 }
 
 function draw() {
-
   // ---- set heading graphic size ----
   let graphicWidth = windowWidth / 4;
   let graphicHeight = windowHeight / 17;
   let gw = constrain(graphicWidth, 300, 410);
-  let gh = constrain(graphicHeight, 60,  80);
+  let gh = constrain(graphicHeight, 60, 80);
   pg = createGraphics(gw, gh);
-
 
   background(24, 24, 24);
 
-
   // ---- noise waves ----
-  let t = 1.0 * frameCount / NUM_FRAMES;
+  let t = (1.0 * frameCount) / NUM_FRAMES;
   let m = 90;
-
 
   marginX = windowWidth / 4.2;
   marginY = windowHeight / 2.5;
 
   stroke(255, 255, 244, 80);
   strokeWeight(1.8);
-  for (let i = 0; i < m; i++){
-    for (let j = 0; j < m; j++){
+  for (let i = 0; i < m; i++) {
+    for (let j = 0; j < m; j++) {
       let x = map(i, 0, m - 1, marginX, windowWidth - marginX);
-      let y = map(j, 0, m - 1, marginY, windowHeight - marginY)
+      let y = map(j, 0, m - 1, marginY, windowHeight - marginY);
       let dx = 20.0 * periodic(t - offset(x, y), 1, x, y);
       let dy = 20.0 * periodic(t - offset(x, y), 200, x, y);
       point(x + dx, y + dy);
@@ -59,15 +103,30 @@ function draw() {
   pg.fill(255, 255, 244);
   pg.textFont(myFont);
   let fs = windowWidth;
-  let fontSize = map(fs, 0, windowWidth, 16, 26)
+  let fontSize = map(fs, 0, windowWidth, 16, 26);
   pg.textSize(fontSize);
   pg.textAlign(CENTER, CENTER);
-  pg.text("Edwyn McMillan", gw / 2, gh / 2);
 
+  let mSpeed = abs(winMouseX - pwinMouseX); 
+  
+  if (mSpeed < 10) {    
+    myName = "Edwyn McMillan"
+    pg.text(myName, gw / 2, gh / 2);
+  } else {
+    myName = "";
+    nameArr.forEach(char => {
+      char = specialChar[Math.floor(random(specialChar.length))]
+      myName += char
+    })
+    pg.text(myName, gw / 2, gh / 2);
+  }
+  
+
+  
   if (windowWidth < windowHeight) {
     image(pg, width / 100, height / 40);
   } else {
-    image(pg, (width / 2) - (gw / 2), height / 40);
+    image(pg, width / 2 - gw / 2, height / 40);
   }
 }
 
@@ -75,7 +134,15 @@ function periodic(p_, seed_, x_, y_) {
   // loop through perlin noise space
   let radius = map(windowWidth, 545, 2560, 0.6, 0.2);
   let scale = 0.018;
-  return 1.0 * noise.noise4D(seed_ + radius * cos(TWO_PI * p_), radius * sin(TWO_PI * p_), scale * x_, scale * y_);
+  return (
+    1.0 *
+    noise.noise4D(
+      seed_ + radius * cos(TWO_PI * p_),
+      radius * sin(TWO_PI * p_),
+      scale * x_,
+      scale * y_
+    )
+  );
 }
 
 function offset(x_, y_) {
