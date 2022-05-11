@@ -1,8 +1,26 @@
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
+  font-family: "Fira Code", monospace;
+  background-color: rgb(24, 24, 24);
 }
 
 canvas {
   display: block;
+}
+
+.contents-wrapper{
+  position: fixed;
+  top: 15vh;
+  left: 1vw;
+}
+
+.contents-list{
+  list-style-type: none;
+}
+
+.contents-list > a {
+  padding: 10px;
+  color: rgb(255, 255, 244);
 }
