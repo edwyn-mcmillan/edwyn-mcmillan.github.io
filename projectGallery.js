@@ -40,7 +40,7 @@ const s = (p) => {
     }
   };
 
-  p.mousePressed = function () {
+  p.mouseClicked = function () {
     if (p.mouseX >= p.windowWidth - p.windowWidth * 0.1) {
       if (selector == images.length - 1) {
         selector = 0;
