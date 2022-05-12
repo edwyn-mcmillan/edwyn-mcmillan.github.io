@@ -68,7 +68,7 @@ h5 {
   max-width: 500px;
 }
 
-.gallery-wrapper {
+.projectmenu-wrapper {
   position: relative;
   text-align: center;
   top: 20vh;
@@ -99,7 +99,6 @@ h5 {
   position: relative;
   text-align: center;
   top: 20vh;
-  background-color: rgb(255, 255, 244);
   padding-top: 80px;
   width: 80vw;
   left: 10vw;
@@ -114,15 +113,7 @@ h5 {
 }
 
 .project-wrapper > .square {
-  max-width: 40vw;
-  max-height: 60vh;
-  padding-left: 30px;
-  padding-right: 30px;
+  max-width: 80vw;
+  max-height: 70vh;
 }
 
-.project-wrapper > .wide {
-  max-width: 70vw;
-  max-height: 60vh;
-  padding-left: 30px;
-  padding-right: 30px;
-}
