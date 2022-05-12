@@ -38,8 +38,8 @@ function mouseWheel(event) {
 }
 
 function preload() {
-  img_1 = loadImage("./images/sketches/cluster1.png");
-  img_2 = loadImage("./images/sketches/cluster2.png");
+  img_1 = loadImage("./images/sketches/cluster1.jpg");
+  img_2 = loadImage("./images/sketches/cluster2.jpg");
   img_3 = loadImage("./images/sketches/particleConnect.jpg");
   img_4 = loadImage("./images/sketches/particleConnect1.jpg");
   img_5 = loadImage("./images/sketches/randomGrid.jpg");
@@ -72,14 +72,14 @@ function setup() {
 function draw() {
   background(24, 24, 24);
   translate(windowWidth / 2, windowHeight / 2);
-  fill(255, 255, 244);
-  stroke(255, 255, 244);
-  rect(
-    -20 - imageWidth / 2,
-    -20 - imageHeight / 2,
-    imageWidth + 40,
-    imageHeight + 40
-  );
+  // fill(255, 255, 244);
+  // stroke(255, 255, 244);
+  // rect(
+  //   -20 - imageWidth / 2,
+  //   -20 - imageHeight / 2,
+  //   imageWidth + 40,
+  //   imageHeight + 40
+  // );
   image(
     images[selector],
     0 - imageWidth / 2,
