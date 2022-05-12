@@ -40,6 +40,24 @@ const s = (p) => {
     }
   };
 
+  p.mousePressed = function () {
+    if (p.mouseX >= p.windowWidth - p.windowWidth * 0.1) {
+      if (selector == images.length - 1) {
+        selector = 0;
+      } else {
+        selector++;
+      }
+    }
+
+    if (p.mouseX <= p.windowWidth * 0.1 && p.mouseY > p.windowHeight * 0.2) {
+      if (selector == 0) {
+        selector = images.length - 1;
+      } else {
+        selector--;
+      }
+    }
+  };
+
   p.preload = function () {
     img_1 = p.loadImage("./images/sketches/cluster1.jpg");
     img_2 = p.loadImage("./images/sketches/cluster2.jpg");
@@ -88,14 +106,7 @@ const s = (p) => {
   p.draw = function () {
     p.background(24, 24, 24);
     p.translate(p.windowWidth / 2, p.windowHeight / 2);
-    // fill(255, 255, 244);
-    // stroke(255, 255, 244);
-    // rect(
-    //   -20 - imageWidth / 2,
-    //   -20 - imageHeight / 2,
-    //   imageWidth + 40,
-    //   imageHeight + 40
-    // );
+
     p.image(
       images[selector],
       0 - imageWidth / 2,
@@ -117,51 +128,53 @@ const s = (p) => {
     let mouseW = p.textWidth(mouseS);
     p.text(arrowS, 0 - arrowW / 2, -40);
     p.text(mouseS, 0 - mouseW / 2, 40);
+
+    p.fill(255, 255, 245, 100);
+    p.textSize(p.windowWidth / 70);
+    p.text(">", p.windowWidth * 0.45, 0);
+    p.text("<", -p.windowWidth * 0.45, 0);
   };
 };
 
 const loading = (p) => {
+  p.windowResized = function () {
+    p.resizeCanvas(p.windowWidth, p.windowHeight);
+  };
+
   p.setup = function () {
     p.createCanvas(p.windowWidth, p.windowHeight, p.P2D);
-    p.ellipseMode(p.RADIUS);
-    p.colorMode(p.HSB, 100, 100, 100);
+    p.colorMode(p.RGB, 255, 255, 255, 100);
     p.noStroke();
+
+    p.frameRate(30);
   };
 
   p.draw = function () {
     p.background(24, 24, 24);
-    p.translate(p.windowWidth / 2, p.windowHeight / 2);
+    p.translate(p.windowWidth / 2 - 100, p.windowHeight / 2);
 
-    var count = 36;
-    for (let i = 0; i < count; i++) {
-      var rotation = p.map(i, 0, count, 0, 2 * p.PI);
-      var phi = p.map(i, 0, count, 0, 4 * p.PI);
-      var rx = 200;
-      var ry = rx * p.abs(p.cos(rotation) * 0.5);
-      var radius = 7;
-      var h = p.map(i, 0, count, 0, 200) % 100;
-      var s = 90;
-      var b = 70;
-
-      p.push();
-      p.rotate(rotation);
-
-      var smoothCount = 6;
-      for (let j = 0; j < smoothCount; j++) {
-        var deltaTheta = p.PI / 150;
-        var theta = p.radians(2.5 * p.frameCount) + j * deltaTheta;
-        var x = rx * p.cos(theta - phi);
-        var y = ry * p.sin(theta - phi);
-        var alpha = 100 * p.sin(p.map(j, 0, smoothCount, 0, p.PI));
-
-        p.fill(h, s, b, alpha);
-        p.ellipse(x, y, radius, radius);
-      }
-      p.pop();
+    for (let i = 0; i < 1; i += 1 / 16.0) {
+      var barheight = inOutSin(triangleWave(timeLoop(60, i * 60))) * 50;
+      p.strokeWeight(4);
+      p.stroke(255, 255, 245);
+      p.point(i * 200, barheight);
     }
+
     if (isLoaded) {
       p.remove();
     }
+  };
+
+  timeLoop = function (totalFrames, offset) {
+    return ((p.frameCount + offset) % totalFrames) / totalFrames;
+  };
+
+  triangleWave = function (t) {
+    return t < 0.5 ? t * 2 : 2 - t * 2;
+  };
+
+  inOutSin = function (t) {
+    return 0.5 - p.cos(p.PI * t) / 2;
   };
 };
 
