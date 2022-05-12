@@ -1,4 +1,4 @@
-const NUM_FRAMES = 50;
+const NUM_FRAMES = 38;
 
 let marginX, marginY;
 let pg;
