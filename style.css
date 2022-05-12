@@ -51,6 +51,7 @@ h5 {
   padding: 10px;
   color: rgb(255, 255, 244);
   opacity: 80%;
+  line-height: 0.7rem;
 }
 
 .about-wrapper {
@@ -71,6 +72,7 @@ h5 {
   position: relative;
   text-align: center;
   top: 20vh;
+  margin-left: -2vw;
 }
 
 .list-heading {

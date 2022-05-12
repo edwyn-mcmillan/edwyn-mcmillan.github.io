@@ -40,7 +40,17 @@ function mouseWheel(event) {
 function preload() {
   img_1 = loadImage("./images/sketches/cluster1.png");
   img_2 = loadImage("./images/sketches/cluster2.png");
-  images = [img_1, img_2];
+  img_3 = loadImage("./images/sketches/particleConnect.jpg");
+  img_4 = loadImage("./images/sketches/particleConnect1.jpg");
+  img_5 = loadImage("./images/sketches/randomGrid.jpg");
+  img_6 = loadImage("./images/sketches/spuriousSplines1.png");
+  img_7 = loadImage("./images/sketches/spuriousSplines.png");
+  img_8 = loadImage("./images/sketches/tree.jpg");
+  img_9 = loadImage("./images/sketches/tree1.jpg");
+  img_10 = loadImage("./images/sketches/connect.jpg");
+  img_11 = loadImage("./images/sketches/connect1.jpg");
+  img_12 = loadImage("./images/sketches/connect2.jpg");
+  images = [img_12, img_11, img_10, img_1, img_2, img_3, img_4, img_5, img_6, img_7, img_8, img_9];
 }
 
 function setup() {
