@@ -28,8 +28,10 @@ const s = (p) => {
       }
     } else if (p.keyCode === p.UP_ARROW) {
       imageWidth += 100;
+      imageHeight += 100;
     } else if (p.keyCode === p.DOWN_ARROW) {
       imageWidth -= 100;
+      imageHeight -= 100;
     }
   };
 
