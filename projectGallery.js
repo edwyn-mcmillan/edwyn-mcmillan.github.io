@@ -26,6 +26,10 @@ const s = (p) => {
       } else {
         selector++;
       }
+    } else if (p.keyCode === p.UP_ARROW) {
+      imageWidth += 100;
+    } else if (p.keyCode === p.DOWN_ARROW) {
+      imageWidth -= 100;
     }
   };
 
@@ -122,9 +126,9 @@ const s = (p) => {
     a = a - 0.4;
     p.textSize(p.windowWidth / 55);
     p.fill(255, 255, 245, a);
-    let arrowS = "← Use Arrow Keys →";
+    let arrowS = "← Arrow Keys →";
     let arrowW = p.textWidth(arrowS);
-    let mouseS = "↕ Mouse Wheel Zoom ↕";
+    let mouseS = "↕ Scroll Zoom ↕";
     let mouseW = p.textWidth(mouseS);
     p.text(arrowS, 0 - arrowW / 2, -40);
     p.text(mouseS, 0 - mouseW / 2, 40);
