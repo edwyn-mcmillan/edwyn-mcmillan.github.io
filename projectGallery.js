@@ -65,46 +65,27 @@ const s = (p) => {
   };
 
   p.preload = function () {
-    img_1 = p.loadImage("./images/sketches/cluster1.jpg");
-    img_2 = p.loadImage("./images/sketches/cluster2.jpg");
-    img_3 = p.loadImage("./images/sketches/particleConnect.jpg");
-    img_4 = p.loadImage("./images/sketches/particleConnect1.jpg");
-    img_5 = p.loadImage("./images/sketches/randomGrid.jpg");
-    img_6 = p.loadImage("./images/sketches/spuriousSplines1.png");
-    img_7 = p.loadImage("./images/sketches/spuriousSplines.png");
-    img_8 = p.loadImage("./images/sketches/tree.jpg");
-    img_9 = p.loadImage("./images/sketches/tree1.jpg");
-    img_10 = p.loadImage("./images/sketches/connect.jpg");
-    img_11 = p.loadImage("./images/sketches/connect1.jpg");
-    img_12 = p.loadImage("./images/sketches/connect2.jpg");
-    img_13 = p.loadImage("./images/sketches/splineWord2.png");
-    img_14 = p.loadImage("./images/sketches/splineWord1.png");
-    img_15 = p.loadImage("./images/sketches/splineWord3.png");
-    img_16 = p.loadImage("./images/sketches/splineChar3.jpg");
-    img_17 = p.loadImage("./images/sketches/splineChar1.jpg");
-    img_18 = p.loadImage("./images/sketches/splineChar4.png");
-    img_19 = p.loadImage("./images/sketches/splineChar2.png");
     images = [
-      img_12,
-      img_11,
-      img_10,
-      img_1,
-      img_2,
-      img_3,
-      img_4,
-      img_5,
-      img_6,
-      img_7,
-      img_8,
-      img_9,
-      img_13,
-      img_14,
-      img_15,
-      img_16,
-      img_17,
-      img_18,
-      img_19
-    ];
+      img_12 = p.loadImage("./images/sketches/connect2.jpg"),
+      img_10 = p.loadImage("./images/sketches/connect.jpg"),
+      img_11 = p.loadImage("./images/sketches/connect1.jpg"),
+      img_3 = p.loadImage("./images/sketches/particleConnect.jpg"),
+      img_4 = p.loadImage("./images/sketches/particleConnect1.jpg"),
+      img_5 = p.loadImage("./images/sketches/randomGrid.jpg"),
+      img_6 = p.loadImage("./images/sketches/spuriousSplines1.png"),
+      img_7 = p.loadImage("./images/sketches/spuriousSplines.png"),
+      img_13 = p.loadImage("./images/sketches/splineWord2.png"),
+      img_14 = p.loadImage("./images/sketches/splineWord1.png"),
+      img_15 = p.loadImage("./images/sketches/splineWord3.png"),
+      img_16 = p.loadImage("./images/sketches/splineChar3.jpg"),
+      img_17 = p.loadImage("./images/sketches/splineChar1.jpg"),
+      img_18 = p.loadImage("./images/sketches/splineChar4.png"),
+      img_19 = p.loadImage("./images/sketches/splineChar2.png"),
+      img_1 = p.loadImage("./images/sketches/cluster1.jpg"),
+      img_2 = p.loadImage("./images/sketches/cluster2.jpg"),
+      img_8 = p.loadImage("./images/sketches/tree.jpg"),
+      img_9 = p.loadImage("./images/sketches/tree1.jpg"),
+    ]
   };
 
   p.setup = function () {
