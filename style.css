@@ -55,10 +55,11 @@ h5 {
 }
 
 .about-wrapper {
-  position: fixed;
+  position: absolute;
   top: 20vh;
   left: 10vw;
-  padding-right: 10vw;
+  padding-right: 10vw; 
+  
 }
 
 .about-wrapper > img {
