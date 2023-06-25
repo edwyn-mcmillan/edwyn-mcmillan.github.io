@@ -112,17 +112,18 @@ const loading = (p) => {
     p.createCanvas(p.windowWidth, p.windowHeight, p.P2D);
     p.colorMode(p.RGB, 255, 255, 255, 100);
     p.noStroke();
+    p.smooth(8);
 
-    p.frameRate(30);
+    p.frameRate(60);
   };
 
   p.draw = function () {
     p.background(24, 24, 24);
     p.translate(p.windowWidth / 2 - 100, p.windowHeight / 2);
 
-    for (let i = 0; i < 1; i += 1 / 16.0) {
-      var barheight = inOutSin(triangleWave(timeLoop(60, i * 60))) * 50;
-      p.strokeWeight(4);
+    for (let i = 0; i < 1; i += 1 / 12.0) {
+      var barheight = inOutSin(triangleWave(timeLoop(60, i * 60))) * 80;
+      p.strokeWeight(3);
       p.stroke(255, 255, 245);
       p.point(i * 200, barheight);
     }

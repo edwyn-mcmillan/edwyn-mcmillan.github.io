@@ -66,6 +66,7 @@ function setup() {
   colorMode(RGB);
   background(24, 24, 24);
 
+
   noise = new OpenSimplexNoise(Date.now());
 }
 
@@ -125,8 +126,8 @@ function draw() {
     pg.text(printName, gw / 2, gh / 2);
   }
 
-  if (windowWidth < windowHeight) {
-    image(pg, width / 100, height / 40);
+  if (windowWidth < windowHeight - 300) {
+    image(pg, -24, height / 40);
   } else {
     image(pg, width / 2 - gw / 2, height / 40);
   }
