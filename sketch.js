@@ -4,6 +4,9 @@ let marginX, marginY;
 let pg;
 let myFont;
 
+const NAME = "Edwyn McMillan";
+let printName = NAME;
+
 const specialChar = [
   "▣",
   "◁",
@@ -46,8 +49,8 @@ const nameArr = [
   "l",
   "l",
   "a",
-  "n"
-]
+  "n",
+];
 
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
@@ -104,22 +107,24 @@ function draw() {
   pg.textSize(fontSize);
   pg.textAlign(CENTER, CENTER);
 
-  let mSpeed = abs(winMouseX - pwinMouseX); 
-  
-  if (mSpeed < 10) {    
-    myName = "Edwyn McMillan"
-    pg.text(myName, gw / 2, gh / 2);
-  } else {
-    myName = "";
-    nameArr.forEach(char => {
-      char = specialChar[Math.floor(random(specialChar.length))]
-      myName += char
-    })
-    pg.text(myName, gw / 2, gh / 2);
-  }
-  
+  let mSpeed = abs(winMouseX - pwinMouseX);
+  const charIndex = Math.floor(random(NAME.length));
 
-  
+  if (mSpeed < 1) {
+    if (printName != NAME) {
+      let opName = printName.split("");
+      opName[charIndex] = NAME[charIndex];
+      printName = opName.join("");
+    }
+    pg.text(printName, gw / 2, gh / 2);
+  } else {
+    let nameArr = printName.split("");
+    nameArr[charIndex] = specialChar[Math.floor(random(specialChar.length))];
+    printName = nameArr.join("");
+
+    pg.text(printName, gw / 2, gh / 2);
+  }
+
   if (windowWidth < windowHeight) {
     image(pg, width / 100, height / 40);
   } else {

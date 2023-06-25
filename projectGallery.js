@@ -66,26 +66,26 @@ const s = (p) => {
 
   p.preload = function () {
     images = [
-      img_12 = p.loadImage("./images/sketches/connect2.jpg"),
-      img_10 = p.loadImage("./images/sketches/connect.jpg"),
-      img_11 = p.loadImage("./images/sketches/connect1.jpg"),
-      img_3 = p.loadImage("./images/sketches/particleConnect.jpg"),
-      img_4 = p.loadImage("./images/sketches/particleConnect1.jpg"),
-      img_5 = p.loadImage("./images/sketches/randomGrid.jpg"),
-      img_6 = p.loadImage("./images/sketches/spuriousSplines1.png"),
-      img_7 = p.loadImage("./images/sketches/spuriousSplines.png"),
-      img_13 = p.loadImage("./images/sketches/splineWord2.png"),
-      img_14 = p.loadImage("./images/sketches/splineWord1.png"),
-      img_15 = p.loadImage("./images/sketches/splineWord3.png"),
-      img_16 = p.loadImage("./images/sketches/splineChar3.jpg"),
-      img_17 = p.loadImage("./images/sketches/splineChar1.jpg"),
-      img_18 = p.loadImage("./images/sketches/splineChar4.png"),
-      img_19 = p.loadImage("./images/sketches/splineChar2.png"),
-      img_1 = p.loadImage("./images/sketches/cluster1.jpg"),
-      img_2 = p.loadImage("./images/sketches/cluster2.jpg"),
-      img_8 = p.loadImage("./images/sketches/tree.jpg"),
-      img_9 = p.loadImage("./images/sketches/tree1.jpg"),
-    ]
+      (img_12 = p.loadImage("./images/sketches/connect2.jpg")),
+      (img_10 = p.loadImage("./images/sketches/connect.jpg")),
+      (img_11 = p.loadImage("./images/sketches/connect1.jpg")),
+      (img_3 = p.loadImage("./images/sketches/particleConnect.jpg")),
+      (img_4 = p.loadImage("./images/sketches/particleConnect1.jpg")),
+      (img_5 = p.loadImage("./images/sketches/randomGrid.jpg")),
+      (img_6 = p.loadImage("./images/sketches/spuriousSplines1.png")),
+      (img_7 = p.loadImage("./images/sketches/spuriousSplines.png")),
+      (img_13 = p.loadImage("./images/sketches/splineWord2.png")),
+      (img_14 = p.loadImage("./images/sketches/splineWord1.png")),
+      (img_15 = p.loadImage("./images/sketches/splineWord3.png")),
+      (img_16 = p.loadImage("./images/sketches/splineChar3.jpg")),
+      (img_17 = p.loadImage("./images/sketches/splineChar1.jpg")),
+      (img_18 = p.loadImage("./images/sketches/splineChar4.png")),
+      (img_19 = p.loadImage("./images/sketches/splineChar2.png")),
+      (img_1 = p.loadImage("./images/sketches/cluster1.jpg")),
+      (img_2 = p.loadImage("./images/sketches/cluster2.jpg")),
+      (img_8 = p.loadImage("./images/sketches/tree.jpg")),
+      (img_9 = p.loadImage("./images/sketches/tree1.jpg")),
+    ];
   };
 
   p.setup = function () {
@@ -115,20 +115,6 @@ const s = (p) => {
       imageWidth,
       imageHeight
     );
-
-    // help text
-    p.stroke(24, 24, 24, a);
-    p.fill(24, 24, 24, a);
-    p.rect(0 - imageWidth / 2, 0 - imageHeight / 2, imageWidth, imageHeight);
-    a = a - 0.4;
-    p.textSize(p.windowWidth / 55);
-    p.fill(255, 255, 245, a);
-    let arrowS = "← Arrow Keys →";
-    let arrowW = p.textWidth(arrowS);
-    let mouseS = "↕ Scroll Zoom ↕";
-    let mouseW = p.textWidth(mouseS);
-    p.text(arrowS, 0 - arrowW / 2, -40);
-    p.text(mouseS, 0 - mouseW / 2, 40);
 
     p.fill(255, 255, 245, 100);
     p.textSize(p.windowWidth / 70);

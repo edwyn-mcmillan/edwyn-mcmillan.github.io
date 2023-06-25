@@ -21,6 +21,7 @@ p {
 
 a {
   color: rgb(255, 255, 244);
+  text-decoration: none;
 }
 
 h2 {
@@ -54,12 +55,19 @@ h5 {
   line-height: 0.7rem;
 }
 
+.list-header {
+  margin-bottom: 4em;
+}
+
 .about-wrapper {
   position: absolute;
   top: 20vh;
-  left: 10vw;
-  padding-right: 10vw; 
-  
+  left: 10%;
+  padding-right: 10vw;
+}
+
+.about-link {
+  line-height: 2em;
 }
 
 .about-wrapper > img {
@@ -67,17 +75,6 @@ h5 {
   width: 100%;
   object-fit: contain;
   max-width: 500px;
-}
-
-.projectmenu-wrapper {
-  position: relative;
-  text-align: center;
-  top: 20vh;
-  margin-left: -2vw;
-}
-
-.list-heading {
-  font-size: 1.3rem;
 }
 
 .gallery-contents {
@@ -131,7 +128,6 @@ h5 {
   content: "";
   padding-top: 56.25%;
 }
-
 
 .video-responsive-item {
   position: absolute;

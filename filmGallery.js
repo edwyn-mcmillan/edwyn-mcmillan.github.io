@@ -96,20 +96,6 @@ const s = (p) => {
       imageHeight
     );
 
-    // help text
-    p.stroke(24, 24, 24, a);
-    p.fill(24, 24, 24, a);
-    p.rect(0 - imageWidth / 2, 0 - imageHeight / 2, imageWidth, imageHeight);
-    a = a - 0.4;
-    p.textSize(p.windowWidth / 55);
-    p.fill(255, 255, 245, a);
-    let arrowS = "← Arrow Keys →";
-    let arrowW = p.textWidth(arrowS);
-    let mouseS = "↕ Scroll Zoom ↕";
-    let mouseW = p.textWidth(mouseS);
-    p.text(arrowS, 0 - arrowW / 2, -40);
-    p.text(mouseS, 0 - mouseW / 2, 40);
-
     p.fill(255, 255, 245, 100);
     p.textSize(p.windowWidth / 70);
     p.text(">", p.windowWidth * 0.45, 0);
