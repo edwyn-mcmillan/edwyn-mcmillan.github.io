@@ -125,6 +125,7 @@ function draw() {
   } else {
     let nameArr = printName.split("");
     nameArr[charIndex] = specialChar[Math.floor(random(specialChar.length))];
+    nameArr[5] = " ";
     printName = nameArr.join("");
 
     pg.text(printName, gw / 2, gh / 2);
