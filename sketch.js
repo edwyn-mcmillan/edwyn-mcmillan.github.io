@@ -66,11 +66,14 @@ function setup() {
   colorMode(RGB);
   background(24, 24, 24);
 
-
   noise = new OpenSimplexNoise(Date.now());
 }
 
 function draw() {
+  const frames = windowWidth * 0.01;
+  const f = constrain(frames, 24, 60);
+  frameRate(f);
+
   // ---- set heading graphic size ----
   let graphicWidth = windowWidth / 4;
   let graphicHeight = windowHeight / 17;
@@ -82,7 +85,8 @@ function draw() {
 
   // ---- noise waves ----
   let t = (1.0 * frameCount) / NUM_FRAMES;
-  let m = 90;
+  let mCount = windowWidth * 0.05;
+  let m = constrain(mCount, 10, 90);
 
   marginX = windowWidth / 4.2;
   marginY = windowHeight / 2.5;
