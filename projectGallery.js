@@ -83,8 +83,6 @@ const s = (p) => {
       (img_19 = p.loadImage("./images/sketches/splineChar2.png")),
       (img_1 = p.loadImage("./images/sketches/cluster1.jpg")),
       (img_2 = p.loadImage("./images/sketches/cluster2.jpg")),
-      (img_8 = p.loadImage("./images/sketches/tree.jpg")),
-      (img_9 = p.loadImage("./images/sketches/tree1.jpg")),
     ];
   };
 
