@@ -1,4 +1,4 @@
-let total = 50;
+let total = 40;
 let r;
 const particles = [];
 
@@ -8,11 +8,11 @@ const loading = (p) => {
       this.i = index;
       let velx = l_.x - p.windowWidth / 2;
       let vely = l_.y - p.windowHeight / 2;
-      this.acc = p.createVector(velx, vely).normalize().mult(0.1);
-      this.vel = p.createVector(velx, vely).normalize().mult(2.5);
+      this.acc = p.createVector(velx, vely).normalize().mult(1);
+      this.vel = p.createVector(velx, vely).normalize().mult(3);
       this.pos = l_;
       this.lifespan = 255.0;
-      this.myc = (255, 255, 255, this.lifespan);
+      this.myc = (200, 100, 100, this.lifespan);
     }
 
     run() {
@@ -23,16 +23,28 @@ const loading = (p) => {
     update() {
       this.vel.add(this.acc);
       this.pos.add(this.vel);
-      this.lifespan -= p.random(0.8, 1.1);
+      this.lifespan -= p.random(0.4, 1.1);
     }
 
     connect(p_) {
-      let distance = this.pos.dist(p_.pos);
-      let ld = p.map(this.lifespan, 255, 0, 5, 100);
-      if (distance < 140 - (this.lifespan / 3) && p_.pos !== this.pos) {
-        p.stroke(this.myc, 30 - ld % 30);
-        p.strokeWeight(1.1);
-        p.line(this.pos.x, this.pos.y, p_.pos.x, p_.pos.y);
+      if (
+        (this.acc.x < 0.1 && this.acc.y < 0.1) ||
+        (this.acc.x > 0.1 && this.acc.y > 0.1) ||
+        (this.acc.x < 0.1 && this.acc.y > 0.1) ||
+        (this.acc.x < 0.1 && this.acc.y > 0.1) ||
+        (this.acc.x < 0.1 && this.acc.y < 0.1) ||
+        (this.acc.x > 0.1 && this.acc.y < 0.1)
+      ) {
+        let distance = this.pos.dist(p_.pos);
+        let ld = p.map(this.lifespan, 255, 0, 20, 100);
+        if (distance < 130 - this.lifespan / 3 && p_.pos !== this.pos) {
+          p.stroke(10, 76, 150, ld);
+          p.strokeWeight(0.3);
+          p.line(this.pos.x, this.pos.y, p_.pos.x, p_.pos.y);
+          p.strokeWeight(5);
+          p.stroke(200, 10, 30, ld);
+          p.point(this.pos.x, this.pos.y);
+        }
       }
     }
 
@@ -54,8 +66,8 @@ const loading = (p) => {
 
   p.setup = function () {
     p.createCanvas(p.windowWidth, p.windowHeight, p.P2D);
-    p.colorMode(p.HSB, 255, 255, 255, 400);
-    p.noStroke();
+    p.colorMode(p.RGB, 255, 255, 255, 100);
+    // p.noStroke();
     p.smooth(8);
     p.frameRate(60);
 
@@ -74,7 +86,14 @@ const loading = (p) => {
   };
 
   p.draw = function () {
-    p.background(24, 24, 24);
+    p.background(24, 24, 24, 100);
+
+    // if (particles.length < total) {
+    //   let i = 0;
+    //   particles.push(
+    //     new Particle(new p5.Vector(p.windowWidth / 2, p.windowHeight / 2), i)
+    //   );
+    // }
 
     for (let i = particles.length - 1; i >= 0; i--) {
       let part = particles[i];
@@ -88,7 +107,7 @@ const loading = (p) => {
         let r = p.random(30, 200);
         let x = r * p.cos(i);
         let y = r * p.sin(i);
-        if(p.frameCount % 50 === 0){
+        if (p.frameCount % 100 === 0) {
           particles.push(
             new Particle(
               p.createVector(p.windowWidth / 2 + x, p.windowHeight / 2 + y),
