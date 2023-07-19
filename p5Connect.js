@@ -54,7 +54,7 @@ const loading = (p) => {
 
   p.setup = function () {
     p.createCanvas(p.windowWidth, p.windowHeight, p.P2D);
-    p.colorMode(p.HSB, 255, 255, 255, 255);
+    p.colorMode(p.HSB, 255, 255, 255, 400);
     p.noStroke();
     p.smooth(8);
     p.frameRate(60);
