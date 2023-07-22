@@ -1,4 +1,4 @@
-let total = 40;
+let total = 100;
 let r;
 const particles = [];
 
@@ -8,8 +8,9 @@ const loading = (p) => {
       this.i = index;
       let velx = l_.x - p.windowWidth / 2;
       let vely = l_.y - p.windowHeight / 2;
-      this.acc = p.createVector(velx, vely).normalize().mult(1);
-      this.vel = p.createVector(velx, vely).normalize().mult(3);
+      let velz = l_.z - p.windowHeight / 2;
+      this.acc = p.createVector(velx, vely, velz).normalize().mult(1);
+      this.vel = p.createVector(velx, vely, velz).normalize().mult(3);
       this.pos = l_;
       this.lifespan = 255.0;
       this.myc = (200, 100, 100, this.lifespan);
@@ -65,7 +66,7 @@ const loading = (p) => {
   };
 
   p.setup = function () {
-    p.createCanvas(p.windowWidth, p.windowHeight, p.P2D);
+    p.createCanvas(p.windowWidth, p.windowHeight, p.P3D);
     p.colorMode(p.RGB, 255, 255, 255, 100);
     // p.noStroke();
     p.smooth(8);
@@ -78,7 +79,7 @@ const loading = (p) => {
 
       particles.push(
         new Particle(
-          new p5.Vector(p.windowWidth / 2 + x, p.windowHeight / 2 + y),
+          new p5.Vector(p.windowWidth / 2 + x, p.windowHeight / 2 + y, p.windowWidth / 2 + x),
           i
         )
       );
@@ -100,7 +101,7 @@ const loading = (p) => {
       for (let y = particles.length - 1; y >= 0; y--) {
         part.connect(particles[y]);
       }
-      part.applyForce(p.createVector(p.random(-0.1, 0.1), p.random(-0.1, 0.1)));
+      part.applyForce(p.createVector(p.random(-0.1, 0.1), p.random(-0.1, 0.1)), p.random(-0.1, 0.1));
       part.run();
 
       if (particles.length < 300) {
@@ -110,7 +111,7 @@ const loading = (p) => {
         if (p.frameCount % 100 === 0) {
           particles.push(
             new Particle(
-              p.createVector(p.windowWidth / 2 + x, p.windowHeight / 2 + y),
+              p.createVector(p.windowWidth / 2 + x, p.windowHeight / 2 + y, p.windowWidth / 2 + x),
               i
             )
           );
