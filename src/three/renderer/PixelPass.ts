@@ -1,4 +1,6 @@
 import * as THREE from "three";
+import fragmentShader from "./shaders/pixel.frag?raw";
+import vertexShader from "./shaders/pixel.vert?raw";
 
 export class PixelPass {
   scene: THREE.Scene;
@@ -21,23 +23,8 @@ export class PixelPass {
           ),
         },
       },
-      vertexShader: `
-                varying vec2 vUv;
-                void main() {
-                    vUv = uv;
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-                }
-                `,
-      fragmentShader: `
-                uniform sampler2D tDiffuse;
-                uniform vec4 resolution;
-                varying vec2 vUv;
-                void main() {
-                    vec2 iuv = (floor(resolution.xy * vUv) + .5) * resolution.zw;
-                    vec4 texel = texture2D( tDiffuse, iuv );
-                    gl_FragColor = texel;
-                }
-                `,
+      vertexShader,
+      fragmentShader,
     });
 
     const geometry = new THREE.PlaneGeometry(2, 2);
