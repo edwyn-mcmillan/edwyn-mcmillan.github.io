@@ -42,6 +42,7 @@ export class PixelScene {
   dispose(): void {
     cancelAnimationFrame(this.frameId);
     this.pixelCamera.dispose();
+    this.pixelPass.dispose();
   }
 
   onResize() {
@@ -71,7 +72,7 @@ export class PixelScene {
       fov: 50,
       horizontalAngle: 45,
       verticalAngle: 25,
-      distance: 15,
+      distance: 10,
       target: new THREE.Vector3(0, 0, 0),
     });
   }
@@ -84,6 +85,7 @@ export class PixelScene {
       this.pixelCamera.camera,
     );
     this.pixelPass.renderToScreen = true;
+
     this.pixelPass.createGUI();
   }
 
@@ -147,21 +149,21 @@ export class PixelScene {
   }
 
   private setupSceneLights(): void {
-    this.scene.add(new THREE.AmbientLight(0x29364d, 0.6));
+    this.scene.add(new THREE.AmbientLight(0x29364d, 0.5));
 
-    const keyLight = new THREE.DirectionalLight(0xfffc9c, 1.1);
-    keyLight.position.set(8, 4, 2);
+    const keyLight = new THREE.DirectionalLight(0xfffc9c, 2);
+    keyLight.position.set(8, 3, 2);
     keyLight.castShadow = true;
     keyLight.shadow.mapSize.set(2048, 2048);
     this.scene.add(keyLight);
 
-    const fillLight = new THREE.DirectionalLight(0x88aaff, 0.4);
+    const fillLight = new THREE.DirectionalLight(0x88aaff, 2.5);
     fillLight.position.set(-6, 2, 4);
     this.scene.add(fillLight);
   }
 
   private setupShapeLights(): void {
-    this.shapeLight = new THREE.PointLight(0xffcc00, 0.5, 2, 2);
+    this.shapeLight = new THREE.PointLight(0xffaa00, 0.5, 2, 2);
     this.shapeLight.position.copy(this.shape.position);
     this.scene.add(this.shapeLight);
   }

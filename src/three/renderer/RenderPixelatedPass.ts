@@ -14,16 +14,17 @@ import vertexShader from "./shaders/pixelated.vert?raw";
  * Original license: MIT
  *
  * Modifications:
- * - Integrated into Vite + React architecture
+ * - Integrated into React architecture
+ * - Added additional shader logic for toon lighting effect
  * - Simplified render pipeline (no EffectComposer)
  * - TypeScript adjustments
- * - Added GUI controls for pixelSize, normalEdgeStrength, depthEdgeStrength
+ * - Added GUI controls for pixelSize, toonSteps, toonSoftness
  */
 
 export interface PixelatedPassParams {
   pixelSize?: number;
-  normalEdgeStrength?: number;
-  depthEdgeStrength?: number;
+  toonSteps?: number;
+  toonSoftness?: number;
 }
 
 export class RenderPixelatedPass extends Pass {
@@ -36,6 +37,8 @@ export class RenderPixelatedPass extends Pass {
   normalMaterial: THREE.Material;
 
   public pixelSize: number;
+  public toonSteps: number;
+  public toonSoftness: number;
   gui?: GUI;
 
   constructor(
@@ -48,6 +51,8 @@ export class RenderPixelatedPass extends Pass {
 
     this.resolution = resolution;
     this.pixelSize = params.pixelSize ?? 1;
+    this.toonSteps = params.toonSteps ?? 8;
+    this.toonSoftness = params.toonSoftness ?? 0.05;
 
     this.fsQuad = new FullScreenQuad(this.material());
     this.scene = scene;
@@ -67,11 +72,21 @@ export class RenderPixelatedPass extends Pass {
   }
 
   createGUI(parentGUI?: GUI): GUI {
-    const gui = parentGUI ? parentGUI.addFolder("Pixelated Pass") : new GUI();
+    const gui = parentGUI ? parentGUI.addFolder("Pixelated + Toon") : new GUI();
 
     gui
-      .add(this as any, "pixelSize", 0.5, 1.5, 0.01)
+      .add(this as any, "pixelSize", 0.5, 2, 0.01)
       .name("Pixel Size")
+      .onChange(() => this.updateUniforms());
+
+    gui
+      .add(this as any, "toonSteps", 2, 10, 1)
+      .name("Toon Steps")
+      .onChange(() => this.updateUniforms());
+
+    gui
+      .add(this as any, "toonSoftness", 0.0, 0.3, 0.01)
+      .name("Toon Softness")
       .onChange(() => this.updateUniforms());
 
     if (!parentGUI) {
@@ -87,6 +102,8 @@ export class RenderPixelatedPass extends Pass {
     const uniforms = this.fsQuad.material.uniforms;
 
     uniforms.pixelSize.value = this.pixelSize;
+    uniforms.toonSteps.value = this.toonSteps;
+    uniforms.toonSoftness.value = this.toonSoftness;
   }
 
   render(renderer: WebGLRenderer) {
@@ -164,6 +181,8 @@ export class RenderPixelatedPass extends Pass {
           ),
         },
         pixelSize: { value: this.pixelSize },
+        toonSteps: { value: this.toonSteps },
+        toonSoftness: { value: this.toonSoftness },
       },
       vertexShader,
       fragmentShader,
