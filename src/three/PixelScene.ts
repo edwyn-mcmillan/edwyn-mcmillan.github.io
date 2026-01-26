@@ -1,13 +1,11 @@
 import * as THREE from "three";
-import { OrbitControls } from "three/examples/jsm/Addons.js";
 import { RenderPixelatedPass } from "./renderer/RenderPixelatedPass";
+import { PixelCamera } from "./scene/PixelCamera";
 
 export class PixelScene {
   scene!: THREE.Scene;
-  camera!: THREE.PerspectiveCamera;
+  pixelCamera!: PixelCamera;
   renderer!: THREE.WebGLRenderer;
-  controls!: OrbitControls;
-
   pixelPass!: RenderPixelatedPass;
 
   shape!: THREE.Mesh;
@@ -19,8 +17,7 @@ export class PixelScene {
   constructor(canvas: HTMLCanvasElement) {
     this.setupScene();
     this.setupRenderer(canvas);
-    this.setupCamera();
-    this.setupCameraControls(canvas);
+    this.setupCamera(canvas);
 
     this.setupSceneLights();
     this.setupShape();
@@ -35,7 +32,7 @@ export class PixelScene {
     const loop = () => {
       const delta = this.clock.getDelta();
       this.animateShape(delta);
-      this.controls.update();
+      this.pixelCamera.update();
       this.pixelPass.render(this.renderer);
       this.frameId = requestAnimationFrame(loop);
     };
@@ -44,13 +41,13 @@ export class PixelScene {
 
   dispose(): void {
     cancelAnimationFrame(this.frameId);
+    this.pixelCamera.dispose();
   }
 
   onResize() {
     const width = window.innerWidth;
     const height = window.innerHeight;
-    this.camera.aspect = width / height;
-    this.camera.updateProjectionMatrix();
+    this.pixelCamera.onResize(width, height);
     this.renderer.setSize(width, height);
   }
 
@@ -69,23 +66,14 @@ export class PixelScene {
     this.renderer.setPixelRatio(window.devicePixelRatio);
   }
 
-  private setupCamera(): void {
-    this.camera = new THREE.PerspectiveCamera(
-      50,
-      window.innerWidth / window.innerHeight,
-      0.1,
-      100,
-    );
-    this.camera.position.set(5, 2.5, 3);
-    this.camera.lookAt(0, 0, 0);
-  }
-
-  private setupCameraControls(canvas: HTMLCanvasElement): void {
-    this.controls = new OrbitControls(this.camera, canvas);
-    this.controls.enableDamping = true;
-    this.controls.dampingFactor = 0.05;
-    this.controls.enableZoom = true;
-    this.controls.enablePan = true;
+  private setupCamera(canvas: HTMLCanvasElement): void {
+    this.pixelCamera = new PixelCamera(canvas, {
+      fov: 50,
+      horizontalAngle: 45,
+      verticalAngle: 25,
+      distance: 15,
+      target: new THREE.Vector3(0, 0, 0),
+    });
   }
 
   private applyPixelPass(): void {
@@ -93,14 +81,15 @@ export class PixelScene {
     this.pixelPass = new RenderPixelatedPass(
       pixelResolution,
       this.scene,
-      this.camera,
+      this.pixelCamera.camera,
     );
     this.pixelPass.renderToScreen = true;
+    this.pixelPass.createGUI();
   }
 
   private setupShape(): void {
     this.shape = new THREE.Mesh(
-      new THREE.DodecahedronGeometry(),
+      new THREE.IcosahedronGeometry(),
       new THREE.MeshPhongMaterial({
         color: 0xff0000,
         emissive: 0x7d0000,
@@ -130,8 +119,8 @@ export class PixelScene {
     this.shapeLight.position.copy(this.shape.position);
     this.shapeLight.intensity = THREE.MathUtils.clamp(
       0.5 + (1 / distanceToGround) * 0.5,
-      10,
-      100,
+      15,
+      200,
     );
   }
 
@@ -148,7 +137,7 @@ export class PixelScene {
     const groundMat = new THREE.MeshStandardMaterial({
       map: tex_checker,
       roughness: 0.2,
-      metalness: 0.05,
+      metalness: 0.1,
     });
     const ground = new THREE.Mesh(groundGeo, groundMat);
     ground.rotation.x = -Math.PI / 2;
@@ -158,17 +147,21 @@ export class PixelScene {
   }
 
   private setupSceneLights(): void {
-    this.scene.add(new THREE.AmbientLight(0x29364d, 1.5));
+    this.scene.add(new THREE.AmbientLight(0x29364d, 0.6));
 
-    const directionalLight = new THREE.DirectionalLight(0xfffc9c, 0.5);
-    directionalLight.position.set(10, 10, 10);
-    directionalLight.castShadow = true;
-    directionalLight.shadow.mapSize.set(2048, 2048);
-    this.scene.add(directionalLight);
+    const keyLight = new THREE.DirectionalLight(0xfffc9c, 1.1);
+    keyLight.position.set(8, 4, 2);
+    keyLight.castShadow = true;
+    keyLight.shadow.mapSize.set(2048, 2048);
+    this.scene.add(keyLight);
+
+    const fillLight = new THREE.DirectionalLight(0x88aaff, 0.4);
+    fillLight.position.set(-6, 2, 4);
+    this.scene.add(fillLight);
   }
 
   private setupShapeLights(): void {
-    this.shapeLight = new THREE.PointLight(0xffaa00, 0.5, 2, 2);
+    this.shapeLight = new THREE.PointLight(0xffcc00, 0.5, 2, 2);
     this.shapeLight.position.copy(this.shape.position);
     this.scene.add(this.shapeLight);
   }
