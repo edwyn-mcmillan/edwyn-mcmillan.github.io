@@ -2,8 +2,8 @@ import * as THREE from "three";
 import { WebGLRenderer, WebGLRenderTarget } from "three";
 import { Pass, FullScreenQuad } from "three/addons";
 import { GUI } from "three/addons/libs/lil-gui.module.min.js";
-import fragmentShader from "./shaders/pixelated.frag?raw";
-import vertexShader from "./shaders/pixelated.vert?raw";
+import fragmentShader from "../shaders/pixelated.frag?raw";
+import vertexShader from "../shaders/pixelated.vert?raw";
 
 /**
  * RenderPixelatedPass
@@ -50,7 +50,7 @@ export class RenderPixelatedPass extends Pass {
     super();
 
     this.resolution = resolution;
-    this.pixelSize = params.pixelSize ?? 1;
+    this.pixelSize = params.pixelSize ?? 0.5;
     this.toonSteps = params.toonSteps ?? 8;
     this.toonSoftness = params.toonSoftness ?? 0.05;
 
@@ -75,7 +75,7 @@ export class RenderPixelatedPass extends Pass {
     const gui = parentGUI ? parentGUI.addFolder("Pixelated + Toon") : new GUI();
 
     gui
-      .add(this as any, "pixelSize", 0.5, 2, 0.01)
+      .add(this as any, "pixelSize", 0.1, 2, 0.01)
       .name("Pixel Size")
       .onChange(() => this.updateUniforms());
 
@@ -111,12 +111,24 @@ export class RenderPixelatedPass extends Pass {
 
     renderer.setRenderTarget(this.rgbRenderTarget);
     renderer.render(this.scene, this.camera);
-
-    const overrideMaterial_old = this.scene.overrideMaterial;
     renderer.setRenderTarget(this.normalRenderTarget);
+
+    const grassObjects: any[] = [];
+    this.scene.traverse((obj: any) => {
+      if (obj.isGrass) {
+        grassObjects.push(obj);
+        obj.visible = false;
+      }
+    });
+
+    // Render normals for everything except grass
+    const overrideMaterial_old = this.scene.overrideMaterial;
     this.scene.overrideMaterial = this.normalMaterial;
     renderer.render(this.scene, this.camera);
     this.scene.overrideMaterial = overrideMaterial_old;
+
+    // Restore grass visibility
+    grassObjects.forEach((obj) => (obj.visible = true));
 
     // @ts-ignore
     const uniforms = this.fsQuad.material.uniforms;

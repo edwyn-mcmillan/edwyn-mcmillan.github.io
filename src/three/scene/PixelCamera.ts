@@ -26,7 +26,7 @@ export class PixelCamera {
       fov = 50,
       aspect = window.innerWidth / window.innerHeight,
       near = 0.1,
-      far = 100,
+      far = 5000,
       horizontalAngle = 45,
       verticalAngle = 35,
       distance = 10,

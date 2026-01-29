@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { RenderPixelatedPass } from "./renderer/RenderPixelatedPass";
+import { GrassSystem } from "./scene/GrassSystem";
 import { PixelCamera } from "./scene/PixelCamera";
 
 export class PixelScene {
@@ -10,6 +11,7 @@ export class PixelScene {
 
   shape!: THREE.Mesh;
   shapeLight!: THREE.PointLight;
+  grassSystem!: GrassSystem;
 
   clock = new THREE.Clock();
   frameId = 0;
@@ -18,13 +20,14 @@ export class PixelScene {
     this.setupScene();
     this.setupRenderer(canvas);
     this.setupCamera(canvas);
-
     this.setupSceneLights();
-    this.setupShape();
     this.setupGround();
+    this.setupGrass();
+    this.setupShape();
     this.setupShapeLights();
 
     this.applyPixelPass();
+
     window.addEventListener("resize", () => this.onResize());
   }
 
@@ -33,6 +36,7 @@ export class PixelScene {
       const delta = this.clock.getDelta();
       this.animateShape(delta);
       this.pixelCamera.update();
+      this.grassSystem.update(this.pixelCamera.camera);
       this.pixelPass.render(this.renderer);
       this.frameId = requestAnimationFrame(loop);
     };
@@ -43,6 +47,7 @@ export class PixelScene {
     cancelAnimationFrame(this.frameId);
     this.pixelCamera.dispose();
     this.pixelPass.dispose();
+    this.grassSystem.dispose();
   }
 
   onResize() {
@@ -54,7 +59,6 @@ export class PixelScene {
 
   private setupScene(): void {
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x151729);
   }
 
   private setupRenderer(canvas: HTMLCanvasElement): void {
@@ -63,6 +67,7 @@ export class PixelScene {
       antialias: false,
     });
     this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setPixelRatio(window.devicePixelRatio);
   }
@@ -71,8 +76,8 @@ export class PixelScene {
     this.pixelCamera = new PixelCamera(canvas, {
       fov: 50,
       horizontalAngle: 45,
-      verticalAngle: 25,
-      distance: 10,
+      verticalAngle: 30,
+      distance: 20,
       target: new THREE.Vector3(0, 0, 0),
     });
   }
@@ -85,7 +90,6 @@ export class PixelScene {
       this.pixelCamera.camera,
     );
     this.pixelPass.renderToScreen = true;
-
     this.pixelPass.createGUI();
   }
 
@@ -110,36 +114,26 @@ export class PixelScene {
     this.shape.rotation.y += 0.3 * time;
     this.shape.rotation.x += 0.15 * time;
 
-    const bounceHeight = 0.15;
+    const bounceHeight = 1.5;
     const bounceSpeed = 1.5;
     this.shape.position.y =
-      Math.sin(this.clock.elapsedTime * bounceSpeed) * bounceHeight;
+      1.5 + Math.sin(this.clock.elapsedTime * bounceSpeed) * bounceHeight;
 
-    const groundY = -1;
+    const groundY = -1.5;
     const distanceToGround = Math.max(this.shape.position.y - groundY, 0.1);
 
     this.shapeLight.position.copy(this.shape.position);
     this.shapeLight.intensity = THREE.MathUtils.clamp(
-      0.5 + (1 / distanceToGround) * 0.5,
-      15,
-      200,
+      (1 / distanceToGround) * 0.5,
+      100,
+      500,
     );
   }
 
   private setupGround(): void {
-    const texLoader = new THREE.TextureLoader();
-    const tex_checker = this.pixelTexture(
-      texLoader.load(
-        "https://threejsfundamentals.org/threejs/resources/images/checker.png",
-      ),
-    );
-    tex_checker.repeat.set(10, 10);
-
-    const groundGeo = new THREE.PlaneGeometry(50, 50);
-    const groundMat = new THREE.MeshStandardMaterial({
-      map: tex_checker,
-      roughness: 0.2,
-      metalness: 0.1,
+    const groundGeo = new THREE.PlaneGeometry(500, 500);
+    const groundMat = new THREE.MeshToonMaterial({
+      color: 0x5b943d,
     });
     const ground = new THREE.Mesh(groundGeo, groundMat);
     ground.rotation.x = -Math.PI / 2;
@@ -151,10 +145,9 @@ export class PixelScene {
   private setupSceneLights(): void {
     this.scene.add(new THREE.AmbientLight(0x29364d, 0.5));
 
-    const keyLight = new THREE.DirectionalLight(0xfffc9c, 2);
+    const keyLight = new THREE.DirectionalLight(0xfffc9c, 3);
     keyLight.position.set(8, 3, 2);
     keyLight.castShadow = true;
-    keyLight.shadow.mapSize.set(2048, 2048);
     this.scene.add(keyLight);
 
     const fillLight = new THREE.DirectionalLight(0x88aaff, 2.5);
@@ -168,12 +161,16 @@ export class PixelScene {
     this.scene.add(this.shapeLight);
   }
 
-  private pixelTexture(tex: THREE.Texture): THREE.Texture {
-    tex.minFilter = THREE.NearestFilter;
-    tex.magFilter = THREE.NearestFilter;
-    tex.generateMipmaps = false;
-    tex.wrapS = THREE.RepeatWrapping;
-    tex.wrapT = THREE.RepeatWrapping;
-    return tex;
+  private setupGrass(): void {
+    this.grassSystem = new GrassSystem({
+      count: 9000,
+      areaSize: 40,
+      groundY: -1.5,
+      grassColor: new THREE.Color(0x5b943d),
+      minHeight: 0.5,
+      maxHeight: 0.8,
+    });
+
+    this.scene.add(this.grassSystem.getMesh());
   }
 }
