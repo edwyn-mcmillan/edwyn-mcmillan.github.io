@@ -22,9 +22,9 @@ import vertexShader from "../shaders/pixelated.vert?raw";
  */
 
 export interface PixelatedPassParams {
-  pixelSize?: number;
-  toonSteps?: number;
-  toonSoftness?: number;
+  pixelSize: number;
+  toonSteps: number;
+  toonSoftness: number;
 }
 
 export class RenderPixelatedPass extends Pass {
@@ -45,14 +45,14 @@ export class RenderPixelatedPass extends Pass {
     resolution: THREE.Vector2,
     scene: THREE.Scene,
     camera: THREE.Camera,
-    params: PixelatedPassParams = {},
+    params: PixelatedPassParams,
   ) {
     super();
 
     this.resolution = resolution;
-    this.pixelSize = params.pixelSize ?? 0.5;
-    this.toonSteps = params.toonSteps ?? 8;
-    this.toonSoftness = params.toonSoftness ?? 0.05;
+    this.pixelSize = params.pixelSize;
+    this.toonSteps = params.toonSteps;
+    this.toonSoftness = params.toonSoftness;
 
     this.fsQuad = new FullScreenQuad(this.material());
     this.scene = scene;
@@ -114,21 +114,27 @@ export class RenderPixelatedPass extends Pass {
     renderer.setRenderTarget(this.normalRenderTarget);
 
     const grassObjects: any[] = [];
+    const lightningObjects: any[] = [];
     this.scene.traverse((obj: any) => {
       if (obj.isGrass) {
         grassObjects.push(obj);
         obj.visible = false;
       }
+      if (obj.isLightning) {
+        lightningObjects.push(obj);
+        obj.visible = false;
+      }
     });
 
-    // Render normals for everything except grass
+    // Render normals for everything except grass and lightning
     const overrideMaterial_old = this.scene.overrideMaterial;
     this.scene.overrideMaterial = this.normalMaterial;
     renderer.render(this.scene, this.camera);
     this.scene.overrideMaterial = overrideMaterial_old;
 
-    // Restore grass visibility
+    // Restore grass and lightning visibility
     grassObjects.forEach((obj) => (obj.visible = true));
+    lightningObjects.forEach((obj) => (obj.visible = true));
 
     // @ts-ignore
     const uniforms = this.fsQuad.material.uniforms;
