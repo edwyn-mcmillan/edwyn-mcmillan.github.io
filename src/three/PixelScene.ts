@@ -206,8 +206,8 @@ export class PixelScene {
       count: this.grassCount,
       areaSize: this.grassArea,
       groundY: -1.5,
-      grassTexturePath: "src/assets/grass_leaf.png",
-      accentGrassTexturePath: "src/assets/accent_leaf.png",
+      grassTexturePath: "assets/grass_leaf.png",
+      accentGrassTexturePath: "assets/accent_leaf.png",
       accentGrassRatio: 0.05,
       minHeight: 0.3,
       maxHeight: 0.5,
@@ -217,8 +217,6 @@ export class PixelScene {
       groundColors: [this.groundColor1, this.groundColor2, this.groundColor3],
       accentColor: this.accentColor,
     });
-
-    // this.grassSystem.setGroundColors(
 
     const grassMeshes = this.grassSystem.getMeshes();
     grassMeshes.forEach((mesh) => this.scene.add(mesh));
@@ -261,7 +259,7 @@ export class PixelScene {
 
   private async setupPillar(): Promise<void> {
     const pillarsLoader = new ModelLoader();
-    await pillarsLoader.load("src/assets/stone_arch_pillars.glb");
+    await pillarsLoader.load("assets/stone_arch_pillars.glb");
     const pillar = pillarsLoader.getChildModel(5);
 
     ModelLoader.convertToToonMaterial(pillar, this.pillarColor);
