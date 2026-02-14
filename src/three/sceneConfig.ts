@@ -7,6 +7,7 @@ export const sceneConfig = {
   render: {
     pixelResolution: new THREE.Vector2(320, 180),
     pixelSize: 0.45,
+    zoomedPixelSize: 1.2,
     toonSoftness: 0.05,
     toonSteps: 8,
   },
@@ -32,7 +33,7 @@ export const sceneConfig = {
 
   camera: {
     fov: 50,
-    horizontalAngle: 45,
+    horizontalAngle: 65,
     verticalAngle: 36,
     distance: 40,
     target: new THREE.Vector3(0, 2, 0),

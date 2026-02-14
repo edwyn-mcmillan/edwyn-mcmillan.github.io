@@ -26,6 +26,15 @@ export class PixelScene {
   private originalCameraPos = new THREE.Vector3();
   private originalTarget = new THREE.Vector3();
   private zoomed = false;
+  private zoomBlend = 0;
+  private zoomBlendTarget = 0;
+
+  private pixelSizeAnim: {
+    from: number;
+    to: number;
+    duration: number;
+    elapsed: number;
+  } | null = null;
 
   constructor(canvas: HTMLCanvasElement) {
     this.setupScene();
@@ -61,6 +70,21 @@ export class PixelScene {
 
     const loop = () => {
       const delta = this.clock.getDelta();
+
+      // Smoothly blend zoom damping (matched to 1.5s camera transition)
+      const blendSpeed = 0.67;
+      if (this.zoomBlend < this.zoomBlendTarget) {
+        this.zoomBlend = Math.min(
+          this.zoomBlend + delta * blendSpeed,
+          this.zoomBlendTarget,
+        );
+      } else if (this.zoomBlend > this.zoomBlendTarget) {
+        this.zoomBlend = Math.max(
+          this.zoomBlend - delta * blendSpeed,
+          this.zoomBlendTarget,
+        );
+      }
+
       this.animateShape(delta);
 
       // While zoomed, keep the controls target tracking the crystal
@@ -69,6 +93,7 @@ export class PixelScene {
       }
 
       this.pixelCamera.update(delta);
+      this.updatePixelSize(delta);
 
       this.grassSystem.update(this.pixelCamera.camera, delta);
 
@@ -91,26 +116,58 @@ export class PixelScene {
 
   zoomToShape(): void {
     this.zoomed = true;
-    const offset = new THREE.Vector3(2, 1, 3).normalize().multiplyScalar(3);
+    this.zoomBlendTarget = 1;
+    const offset = new THREE.Vector3(2, 1, 3).normalize().multiplyScalar(1.5);
     const target = this.shape.position.clone();
     const position = target.clone().add(offset);
     this.pixelCamera.transitionTo(position, target, 1.5, {
       liveEndTarget: () => this.shape.position,
       liveEndPos: () => this.shape.position.clone().add(offset),
     });
+    this.animatePixelSize(
+      sceneConfig.render.pixelSize,
+      sceneConfig.render.zoomedPixelSize,
+      1.5,
+    );
   }
 
   zoomOut(): void {
     this.zoomed = false;
+    this.zoomBlendTarget = 0;
     this.pixelCamera.transitionTo(
       this.originalCameraPos,
       this.originalTarget,
+      1.5,
+    );
+    this.animatePixelSize(
+      sceneConfig.render.zoomedPixelSize,
+      sceneConfig.render.pixelSize,
       1.5,
     );
     // Re-enable orbit after transition completes (controls re-enabled isn't automatic)
     setTimeout(() => {
       this.pixelCamera.controls.enabled = true;
     }, 1600);
+  }
+
+  private animatePixelSize(from: number, to: number, duration: number): void {
+    this.pixelSizeAnim = { from, to, duration, elapsed: 0 };
+  }
+
+  private updatePixelSize(delta: number): void {
+    if (!this.pixelSizeAnim) return;
+    this.pixelSizeAnim.elapsed += delta;
+    const t = Math.min(
+      this.pixelSizeAnim.elapsed / this.pixelSizeAnim.duration,
+      1,
+    );
+    const eased = t * t * (3 - 2 * t); // smoothstep
+    this.pixelPass.pixelSize = THREE.MathUtils.lerp(
+      this.pixelSizeAnim.from,
+      this.pixelSizeAnim.to,
+      eased,
+    );
+    if (t >= 1) this.pixelSizeAnim = null;
   }
 
   onResize() {
@@ -169,17 +226,23 @@ export class PixelScene {
   }
 
   private animateShape(time: number): void {
+    const b = this.zoomBlend;
     const cycleSpeed = 1;
     const envelope = Math.sin(this.clock.elapsedTime * cycleSpeed) * 0.5 + 0.5;
     const easedEnvelope = THREE.MathUtils.smoothstep(envelope, 0.1, 0.9);
     const fastSpin = 2;
     const slowSpin = 0.5;
-    const rotSpeed = THREE.MathUtils.lerp(slowSpin, fastSpin, easedEnvelope);
+    const baseRotSpeed = THREE.MathUtils.lerp(
+      slowSpin,
+      fastSpin,
+      easedEnvelope,
+    );
+    const rotSpeed = THREE.MathUtils.lerp(baseRotSpeed, baseRotSpeed * 0.08, b);
     this.shape.rotation.y += rotSpeed * time;
     this.shape.rotation.x += rotSpeed * 0.5 * time;
     this.shape.rotation.z += rotSpeed * 1.5 * time;
 
-    const bounceHeight = 1;
+    const bounceHeight = THREE.MathUtils.lerp(1, 0.1, b);
     const bounceSpeed = 1;
     this.shape.position.y =
       4.5 + Math.sin(this.clock.elapsedTime * bounceSpeed) * bounceHeight;
@@ -312,7 +375,7 @@ export class PixelScene {
 
   private setupLightning(): void {
     this.lightningSystem = new LightningParticleSystem({
-      boltsPerSecond: 9,
+      boltsPerSecond: 15,
       boltLifetime: 0.8,
       maxBolts: 15,
       color: sceneConfig.colors.bolt,

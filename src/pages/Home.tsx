@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { PixelScene } from "../three/PixelScene";
 import { NavBar } from "../components/NavBar";
 import { AboutPage } from "../components/AboutPage";
+import { PanHint } from "../components/PanHint";
 
 export function Home() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -42,6 +43,7 @@ export function Home() {
       />
       <NavBar currentPage={page} onNavigate={handleNavigate} />
       <AboutPage visible={page === "about"} />
+      <PanHint visible={page === "home"} />
     </>
   );
 }
