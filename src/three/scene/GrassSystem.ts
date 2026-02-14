@@ -155,6 +155,7 @@ export class GrassSystem {
         `
         #include <color_fragment>
         diffuseColor.rgb *= vGroundColor;
+        diffuseColor.a *= vEdgeFade;
         `,
       );
 

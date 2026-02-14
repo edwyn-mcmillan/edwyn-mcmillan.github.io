@@ -24,7 +24,7 @@ export const sceneConfig = {
 
   grass: {
     count: 25000,
-    areaSize: 65,
+    areaSize: 100,
     noiseScale: 0.05,
     octaves: 4,
     persistence: 0.5,
@@ -33,9 +33,9 @@ export const sceneConfig = {
   camera: {
     fov: 50,
     horizontalAngle: 45,
-    verticalAngle: 30,
+    verticalAngle: 36,
     distance: 40,
-    target: new THREE.Vector3(0, 0, 0),
+    target: new THREE.Vector3(0, 2, 0),
   },
 
   lighting: {

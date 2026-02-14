@@ -1,6 +1,9 @@
 // Get instance world position (base of grass)
 vec3 instanceWorldPos = (modelMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
 
+float distFromCenter = length(instanceWorldPos.xz);
+vEdgeFade = 1.0 - smoothstep(30.0, 48.0, distFromCenter);
+
 // Sample ground color
 vec3 groundColor = sampleGroundColor(instanceWorldPos.xz, noiseScale, octaves, persistence, color1, color2, color3);
 

@@ -11,3 +11,4 @@ uniform vec3 color3;
 uniform float isAccent;
 
 varying vec3 vGroundColor;
+varying float vEdgeFade;

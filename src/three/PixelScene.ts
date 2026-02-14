@@ -23,6 +23,10 @@ export class PixelScene {
   clock = new THREE.Clock();
   frameId = 0;
 
+  private originalCameraPos = new THREE.Vector3();
+  private originalTarget = new THREE.Vector3();
+  private zoomed = false;
+
   constructor(canvas: HTMLCanvasElement) {
     this.setupScene();
     this.setupRenderer(canvas);
@@ -48,6 +52,10 @@ export class PixelScene {
     this.pixelCamera.controls.minPolarAngle = polarAngle;
     this.pixelCamera.controls.maxPolarAngle = polarAngle;
 
+    // Store original camera state for zoom out
+    this.originalCameraPos.copy(this.pixelCamera.camera.position);
+    this.originalTarget.copy(this.pixelCamera.controls.target);
+
     // Enable camera to see both default and no-edge-detection layers
     this.pixelCamera.camera.layers.enable(LAYER_NO_EDGE_DETECTION);
 
@@ -55,7 +63,12 @@ export class PixelScene {
       const delta = this.clock.getDelta();
       this.animateShape(delta);
 
-      this.pixelCamera.update();
+      // While zoomed, keep the controls target tracking the crystal
+      if (this.zoomed && !this.pixelCamera.isTransitioning) {
+        this.pixelCamera.controls.target.copy(this.shape.position);
+      }
+
+      this.pixelCamera.update(delta);
 
       this.grassSystem.update(this.pixelCamera.camera, delta);
 
@@ -74,6 +87,30 @@ export class PixelScene {
     this.pixelPass.dispose();
     this.grassSystem.dispose();
     this.lightningSystem.dispose();
+  }
+
+  zoomToShape(): void {
+    this.zoomed = true;
+    const offset = new THREE.Vector3(2, 1, 3).normalize().multiplyScalar(3);
+    const target = this.shape.position.clone();
+    const position = target.clone().add(offset);
+    this.pixelCamera.transitionTo(position, target, 1.5, {
+      liveEndTarget: () => this.shape.position,
+      liveEndPos: () => this.shape.position.clone().add(offset),
+    });
+  }
+
+  zoomOut(): void {
+    this.zoomed = false;
+    this.pixelCamera.transitionTo(
+      this.originalCameraPos,
+      this.originalTarget,
+      1.5,
+    );
+    // Re-enable orbit after transition completes (controls re-enabled isn't automatic)
+    setTimeout(() => {
+      this.pixelCamera.controls.enabled = true;
+    }, 1600);
   }
 
   onResize() {
