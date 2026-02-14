@@ -5,6 +5,7 @@ import { GrassSystem } from "./scene/GrassSystem";
 import { LightningParticleSystem } from "./scene/LightningParticleSystem";
 import { PixelCamera } from "./scene/PixelCamera";
 import { GroundMaterial } from "./scene/GroundMaterial";
+import { sceneConfig, LAYER_NO_EDGE_DETECTION } from "./sceneConfig";
 
 export class PixelScene {
   scene!: THREE.Scene;
@@ -18,29 +19,6 @@ export class PixelScene {
   grassSystem!: GrassSystem;
   lightningSystem!: LightningParticleSystem;
   pillar!: THREE.Object3D;
-
-  /**
-   * Scene Parameters
-   */
-  private pixelResolution = new THREE.Vector2(320, 180);
-  private pixelSize = 0.45;
-  private toonSoftness = 0.05;
-  private toonSteps = 8;
-
-  private crystalColor = new THREE.Color(0x0000ff);
-  private pillarColor = new THREE.Color(0xa0a0a0);
-  private boltColor = new THREE.Color(0x00aaff);
-  private boltGlowColor = new THREE.Color(0xccf0ff);
-
-  private groundColor1 = new THREE.Color(0x4a7c2e); // Darkest
-  private groundColor2 = new THREE.Color(0x64b830); // Medium
-  private groundColor3 = new THREE.Color(0x7dd12e); // Lightest
-  private accentColor = new THREE.Color(0x22b522);
-  private grassCount = 25000;
-  private grassArea = 65;
-  private noiseScale = 0.05;
-  private octaves = 4;
-  private persistence = 0.5;
 
   clock = new THREE.Clock();
   frameId = 0;
@@ -61,14 +39,23 @@ export class PixelScene {
   }
 
   start(): void {
+    this.pixelCamera.controls.enabled = true;
+    this.pixelCamera.controls.enableZoom = false;
+    this.pixelCamera.controls.enablePan = false;
+
+    // Lock vertical tilt so user can only pan horizontally
+    const polarAngle = this.pixelCamera.controls.getPolarAngle();
+    this.pixelCamera.controls.minPolarAngle = polarAngle;
+    this.pixelCamera.controls.maxPolarAngle = polarAngle;
+
+    // Enable camera to see both default and no-edge-detection layers
+    this.pixelCamera.camera.layers.enable(LAYER_NO_EDGE_DETECTION);
+
     const loop = () => {
       const delta = this.clock.getDelta();
       this.animateShape(delta);
 
       this.pixelCamera.update();
-      this.pixelCamera.controls.autoRotate = true;
-      this.pixelCamera.controls.autoRotateSpeed = 0.2;
-      this.pixelCamera.controls.enabled = false;
 
       this.grassSystem.update(this.pixelCamera.camera, delta);
 
@@ -112,38 +99,28 @@ export class PixelScene {
   }
 
   private setupCamera(canvas: HTMLCanvasElement): void {
-    this.pixelCamera = new PixelCamera(canvas, {
-      fov: 50,
-      horizontalAngle: 45,
-      verticalAngle: 30,
-      distance: 40,
-      target: new THREE.Vector3(0, 0, 0),
-    });
+    this.pixelCamera = new PixelCamera(canvas, sceneConfig.camera);
   }
 
   private setupPixelPass(): void {
-    const pixelatedPassParams = {
-      pixelSize: this.pixelSize,
-      toonSoftness: this.toonSoftness,
-      toonSteps: this.toonSteps,
-    };
-
     this.pixelPass = new RenderPixelatedPass(
-      this.pixelResolution,
+      sceneConfig.render.pixelResolution,
       this.scene,
       this.pixelCamera.camera,
-      pixelatedPassParams,
+      {
+        pixelSize: sceneConfig.render.pixelSize,
+        toonSoftness: sceneConfig.render.toonSoftness,
+        toonSteps: sceneConfig.render.toonSteps,
+      },
     );
     this.pixelPass.renderToScreen = true;
-
-    // this.pixelPass.createGUI(); // TODO: Dev flag
   }
 
   private setupShape(): void {
     this.shape = new THREE.Mesh(
       new THREE.IcosahedronGeometry(0.8),
       new THREE.MeshPhongMaterial({
-        color: this.crystalColor,
+        color: sceneConfig.colors.crystal,
         emissive: 0x7d0000,
         shininess: 10,
         specular: 0x007dff,
@@ -184,12 +161,12 @@ export class PixelScene {
     const groundGeo = new THREE.PlaneGeometry(450, 450);
 
     const groundMat = new GroundMaterial({
-      color1: this.groundColor1,
-      color2: this.groundColor2,
-      color3: this.groundColor3,
-      noiseScale: this.noiseScale,
-      octaves: this.octaves,
-      persistence: this.persistence,
+      color1: sceneConfig.colors.ground1,
+      color2: sceneConfig.colors.ground2,
+      color3: sceneConfig.colors.ground3,
+      noiseScale: sceneConfig.grass.noiseScale,
+      octaves: sceneConfig.grass.octaves,
+      persistence: sceneConfig.grass.persistence,
     });
 
     this.ground = new THREE.Mesh(groundGeo, groundMat);
@@ -203,8 +180,8 @@ export class PixelScene {
 
   private setupGrass(): void {
     this.grassSystem = new GrassSystem({
-      count: this.grassCount,
-      areaSize: this.grassArea,
+      count: sceneConfig.grass.count,
+      areaSize: sceneConfig.grass.areaSize,
       groundY: -1.5,
       grassTexturePath: "assets/grass_leaf.png",
       accentGrassTexturePath: "assets/accent_leaf.png",
@@ -214,8 +191,12 @@ export class PixelScene {
       windStrength: 0.2,
       windDirection: new THREE.Vector2(0.8, 0.15),
       groundMesh: this.ground,
-      groundColors: [this.groundColor1, this.groundColor2, this.groundColor3],
-      accentColor: this.accentColor,
+      groundColors: [
+        sceneConfig.colors.ground1,
+        sceneConfig.colors.ground2,
+        sceneConfig.colors.ground3,
+      ],
+      accentColor: sceneConfig.colors.grassAccent,
     });
 
     const grassMeshes = this.grassSystem.getMeshes();
@@ -223,36 +204,55 @@ export class PixelScene {
   }
 
   private setupSceneLights(): void {
-    this.scene.add(new THREE.AmbientLight(0x29364d, 0.5));
+    const { lighting } = sceneConfig;
 
-    const keyLight = new THREE.DirectionalLight(0xfffc9c, 3);
-    keyLight.position.set(9, 4, 3);
+    this.scene.add(
+      new THREE.AmbientLight(lighting.ambient.color, lighting.ambient.intensity),
+    );
+
+    const keyLight = new THREE.DirectionalLight(
+      lighting.key.color,
+      lighting.key.intensity,
+    );
+    keyLight.position.copy(lighting.key.position);
     keyLight.castShadow = true;
 
-    keyLight.shadow.camera.left = -30;
-    keyLight.shadow.camera.right = 30;
-    keyLight.shadow.camera.top = 30;
-    keyLight.shadow.camera.bottom = -30;
-    keyLight.shadow.camera.near = 0.1;
-    keyLight.shadow.camera.far = 50;
+    keyLight.shadow.camera.left = -lighting.key.shadow.bounds;
+    keyLight.shadow.camera.right = lighting.key.shadow.bounds;
+    keyLight.shadow.camera.top = lighting.key.shadow.bounds;
+    keyLight.shadow.camera.bottom = -lighting.key.shadow.bounds;
+    keyLight.shadow.camera.near = lighting.key.shadow.near;
+    keyLight.shadow.camera.far = lighting.key.shadow.far;
 
-    keyLight.shadow.mapSize.width = 2048;
-    keyLight.shadow.mapSize.height = 2048;
+    keyLight.shadow.mapSize.width = lighting.key.shadow.mapSize;
+    keyLight.shadow.mapSize.height = lighting.key.shadow.mapSize;
 
-    keyLight.shadow.bias = -0.0001;
+    keyLight.shadow.bias = lighting.key.shadow.bias;
 
     this.scene.add(keyLight);
 
-    const fillLight = new THREE.DirectionalLight(0x88aaff, 2.5);
-    fillLight.position.set(-6, 2, 4);
+    const fillLight = new THREE.DirectionalLight(
+      lighting.fill.color,
+      lighting.fill.intensity,
+    );
+    fillLight.position.copy(lighting.fill.position);
     this.scene.add(fillLight);
 
-    const ambientLight = new THREE.AmbientLight(0x88aaff, 1.25);
+    const ambientLight = new THREE.AmbientLight(
+      lighting.ambient2.color,
+      lighting.ambient2.intensity,
+    );
     this.scene.add(ambientLight);
   }
 
   private setupShapeLights(): void {
-    this.shapeLight = new THREE.PointLight(0x00aaff, 0.5, 5, 1);
+    const { shape } = sceneConfig.lighting;
+    this.shapeLight = new THREE.PointLight(
+      shape.color,
+      shape.intensity,
+      shape.distance,
+      shape.decay,
+    );
     this.shapeLight.position.copy(this.shape.position);
     this.scene.add(this.shapeLight);
   }
@@ -262,7 +262,7 @@ export class PixelScene {
     await pillarsLoader.load("assets/stone_arch_pillars.glb");
     const pillar = pillarsLoader.getChildModel(5);
 
-    ModelLoader.convertToToonMaterial(pillar, this.pillarColor);
+    ModelLoader.convertToToonMaterial(pillar, sceneConfig.colors.pillar);
     pillar.castShadow = true;
     pillar.receiveShadow = false;
     pillar.position.set(3, -1.5, -2);
@@ -278,12 +278,13 @@ export class PixelScene {
       boltsPerSecond: 9,
       boltLifetime: 0.8,
       maxBolts: 15,
-      color: this.boltColor,
-      glowColor: this.boltGlowColor,
+      color: sceneConfig.colors.bolt,
+      glowColor: sceneConfig.colors.boltGlow,
       boltLength: 2,
       segmentsPerBolt: 5,
       branchProbability: 0.9,
       animationSpeed: 5,
+      targets: sceneConfig.lightning.targets,
     });
 
     this.scene.add(this.lightningSystem.getGroup());

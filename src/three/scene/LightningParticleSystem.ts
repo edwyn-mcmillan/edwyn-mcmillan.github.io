@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { LAYER_NO_EDGE_DETECTION } from "../sceneConfig";
 
 export interface LightningParticleSystemParams {
   boltsPerSecond: number;
@@ -10,6 +11,7 @@ export interface LightningParticleSystemParams {
   segmentsPerBolt: number;
   branchProbability: number;
   animationSpeed: number;
+  targets: readonly THREE.Vector3[];
 }
 
 interface LightningBolt {
@@ -24,49 +26,14 @@ interface LightningBolt {
 export class LightningParticleSystem {
   private bolts: LightningBolt[] = [];
   private group = new THREE.Group();
-
-  private boltsPerSecond!: number;
-  private boltLifetime!: number;
-  private maxBolts!: number;
-  private boltLength!: number;
-  private segmentsPerBolt!: number;
-  private branchProbability!: number;
-  private animationSpeed!: number;
-  private color!: THREE.Color;
-  private glowColor!: THREE.Color;
-
+  private params: LightningParticleSystemParams;
   private emissionSource = new THREE.Vector3();
-  private targets: THREE.Vector3[] = [
-    new THREE.Vector3(3, 8, -2),
-    new THREE.Vector3(3, 6, -2),
-    new THREE.Vector3(3, 2, -2),
-    new THREE.Vector3(-2, 9, 3),
-    new THREE.Vector3(-2, 7, 3),
-    new THREE.Vector3(-2, 3, 3),
-    new THREE.Vector3(0, -2, 0),
-    new THREE.Vector3(-2, -2, 2),
-    new THREE.Vector3(2, -2, -2),
-  ];
-
   private emissionAccumulator = 0;
 
   constructor(params: LightningParticleSystemParams) {
-    this.assignParams(params);
-
+    this.params = params;
     this.group = new THREE.Group();
-    (this.group as any).isLightning = true; // Exclude from edge lighting
-  }
-
-  private assignParams(params: LightningParticleSystemParams) {
-    this.boltsPerSecond = params.boltsPerSecond;
-    this.boltLifetime = params.boltLifetime;
-    this.maxBolts = params.maxBolts;
-    this.boltLength = params.boltLength;
-    this.segmentsPerBolt = params.segmentsPerBolt;
-    this.branchProbability = params.branchProbability;
-    this.animationSpeed = params.animationSpeed;
-    this.color = params.color;
-    this.glowColor = params.glowColor;
+    this.group.layers.set(LAYER_NO_EDGE_DETECTION);
   }
 
   setEmissionSource(position: THREE.Vector3) {
@@ -74,13 +41,12 @@ export class LightningParticleSystem {
   }
 
   update(delta: number) {
-    // Emit bolts
-    this.emissionAccumulator += delta * this.boltsPerSecond;
+    this.emissionAccumulator += delta * this.params.boltsPerSecond;
     const emitCount = Math.floor(this.emissionAccumulator);
     this.emissionAccumulator -= emitCount;
 
     for (let i = 0; i < emitCount; i++) {
-      if (this.bolts.length < this.maxBolts) {
+      if (this.bolts.length < this.params.maxBolts) {
         this.emitBolt();
       }
     }
@@ -88,7 +54,7 @@ export class LightningParticleSystem {
     for (let i = this.bolts.length - 1; i >= 0; i--) {
       const bolt = this.bolts[i];
       bolt.age += delta;
-      bolt.progress += (delta / bolt.lifetime) * this.animationSpeed;
+      bolt.progress += (delta / bolt.lifetime) * this.params.animationSpeed;
 
       if (bolt.age >= bolt.lifetime) {
         this.group.remove(bolt.line);
@@ -110,15 +76,19 @@ export class LightningParticleSystem {
     segments.push(current.clone());
 
     const target: THREE.Vector3 =
-      this.targets[Math.floor(Math.random() * this.targets.length)];
+      this.params.targets[
+        Math.floor(Math.random() * this.params.targets.length)
+      ];
     const direction: THREE.Vector3 = target.clone().sub(current).normalize();
 
-    const totalDistance = target ? current.distanceTo(target) : this.boltLength;
+    const totalDistance = target
+      ? current.distanceTo(target)
+      : this.params.boltLength;
 
-    const segmentLength = totalDistance / this.segmentsPerBolt;
+    const segmentLength = totalDistance / this.params.segmentsPerBolt;
 
-    for (let i = 0; i < this.segmentsPerBolt; i++) {
-      if (target && i === this.segmentsPerBolt - 1) {
+    for (let i = 0; i < this.params.segmentsPerBolt; i++) {
+      if (target && i === this.params.segmentsPerBolt - 1) {
         current = target.clone();
       } else {
         const jitter = new THREE.Vector3(
@@ -136,9 +106,9 @@ export class LightningParticleSystem {
       segments.push(current.clone());
 
       if (
-        Math.random() < this.branchProbability &&
+        Math.random() < this.params.branchProbability &&
         i > 1 &&
-        i < this.segmentsPerBolt - 2
+        i < this.params.segmentsPerBolt - 2
       ) {
         branches.push(this.createBranch(current, direction, segmentLength));
       }
@@ -146,20 +116,21 @@ export class LightningParticleSystem {
 
     const geometry = new THREE.BufferGeometry();
     const material = new THREE.LineBasicMaterial({
-      color: this.color,
+      color: this.params.color,
       transparent: true,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     });
 
     const line = new THREE.LineSegments(geometry, material);
+    line.layers.set(LAYER_NO_EDGE_DETECTION);
     this.group.add(line);
 
     this.bolts.push({
       segments,
       branches,
       age: 0,
-      lifetime: this.boltLifetime * (0.8 + Math.random() * 0.4),
+      lifetime: this.params.boltLifetime * (0.8 + Math.random() * 0.4),
       progress: 0,
       line,
     });
@@ -199,7 +170,7 @@ export class LightningParticleSystem {
     const time = bolt.age / bolt.lifetime;
     const flash = Math.max(0, 1 - time * 2);
 
-    const color = this.glowColor.clone().lerp(this.color, time);
+    const color = this.params.glowColor.clone().lerp(this.params.color, time);
     const mat = bolt.line.material as THREE.LineBasicMaterial;
     mat.color.copy(color);
     mat.opacity = 1 - time + flash * 0.5;
@@ -221,7 +192,7 @@ export class LightningParticleSystem {
       )
       .normalize();
 
-    const segments = Math.floor(this.segmentsPerBolt * 0.3);
+    const segments = Math.floor(this.params.segmentsPerBolt * 0.3);
 
     for (let i = 0; i < segments; i++) {
       const jitter = new THREE.Vector3(

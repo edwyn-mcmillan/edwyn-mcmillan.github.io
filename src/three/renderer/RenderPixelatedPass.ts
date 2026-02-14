@@ -4,6 +4,7 @@ import { Pass, FullScreenQuad } from "three/addons";
 import { GUI } from "three/addons/libs/lil-gui.module.min.js";
 import fragmentShader from "../shaders/pixelated.frag?raw";
 import vertexShader from "../shaders/pixelated.vert?raw";
+import { LAYER_DEFAULT } from "../sceneConfig";
 
 /**
  * RenderPixelatedPass
@@ -97,9 +98,12 @@ export class RenderPixelatedPass extends Pass {
     return gui;
   }
 
+  private getUniforms() {
+    return (this.fsQuad.material as THREE.ShaderMaterial).uniforms;
+  }
+
   updateUniforms() {
-    // @ts-ignore
-    const uniforms = this.fsQuad.material.uniforms;
+    const uniforms = this.getUniforms();
 
     uniforms.pixelSize.value = this.pixelSize;
     uniforms.toonSteps.value = this.toonSteps;
@@ -109,35 +113,24 @@ export class RenderPixelatedPass extends Pass {
   render(renderer: WebGLRenderer) {
     this.updateRenderTargets();
 
+    // Render full scene (all layers) for color
     renderer.setRenderTarget(this.rgbRenderTarget);
     renderer.render(this.scene, this.camera);
+
+    // Render normals for edge detection — only default layer (excludes grass/lightning)
     renderer.setRenderTarget(this.normalRenderTarget);
+    const savedLayers = this.camera.layers.mask;
+    this.camera.layers.set(LAYER_DEFAULT);
 
-    const grassObjects: any[] = [];
-    const lightningObjects: any[] = [];
-    this.scene.traverse((obj: any) => {
-      if (obj.isGrass) {
-        grassObjects.push(obj);
-        obj.visible = false;
-      }
-      if (obj.isLightning) {
-        lightningObjects.push(obj);
-        obj.visible = false;
-      }
-    });
-
-    // Render normals for everything except grass and lightning
     const overrideMaterial_old = this.scene.overrideMaterial;
     this.scene.overrideMaterial = this.normalMaterial;
     renderer.render(this.scene, this.camera);
     this.scene.overrideMaterial = overrideMaterial_old;
 
-    // Restore grass and lightning visibility
-    grassObjects.forEach((obj) => (obj.visible = true));
-    lightningObjects.forEach((obj) => (obj.visible = true));
+    // Restore camera layers to see all objects
+    this.camera.layers.mask = savedLayers;
 
-    // @ts-ignore
-    const uniforms = this.fsQuad.material.uniforms;
+    const uniforms = this.getUniforms();
     uniforms.tDiffuse.value = this.rgbRenderTarget.texture;
     uniforms.tDepth.value = this.rgbRenderTarget.depthTexture;
     uniforms.tNormal.value = this.normalRenderTarget.texture;
@@ -174,8 +167,7 @@ export class RenderPixelatedPass extends Pass {
       false,
     );
 
-    // @ts-ignore
-    const uniforms = this.fsQuad.material.uniforms;
+    const uniforms = this.getUniforms();
     uniforms.resolution.value.set(
       pixelatedResolution.x,
       pixelatedResolution.y,
