@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import noiseGlsl from "../shaders/noise.glsl?raw";
 import groundColorGlsl from "../shaders/groundColor.glsl?raw";
+import cloudShadowGlsl from "../shaders/cloudShadow.glsl?raw";
 
 interface GroundParams {
   color1: THREE.Color;
@@ -22,6 +23,7 @@ export class GroundMaterial extends THREE.MeshToonMaterial {
       shader.uniforms.noiseScale = { value: params.noiseScale };
       shader.uniforms.octaves = { value: params.octaves };
       shader.uniforms.persistence = { value: params.persistence };
+      shader.uniforms.cloudTime = { value: 0 };
 
       // Add varying to pass world position from vertex to fragment shader
       shader.vertexShader = shader.vertexShader.replace(
@@ -50,10 +52,12 @@ export class GroundMaterial extends THREE.MeshToonMaterial {
         uniform float noiseScale;
         uniform float octaves;
         uniform float persistence;
+        uniform float cloudTime;
         varying vec3 vWorldPosition;
 
         ${noiseGlsl}
         ${groundColorGlsl}
+        ${cloudShadowGlsl}
 
         void main() {
         `,
@@ -67,6 +71,7 @@ export class GroundMaterial extends THREE.MeshToonMaterial {
 
         vec3 toneColor = sampleGroundColor(vWorldPosition.xz, noiseScale, octaves, persistence, color1, color2, color3);
         diffuseColor.rgb *= toneColor / color2;
+        diffuseColor.rgb *= cloudShadow(vWorldPosition.xz, cloudTime);
         `,
       );
 
