@@ -38,7 +38,7 @@ export function Home() {
     <>
       <canvas
         ref={canvasRef}
-        style={{ width: "100vw", height: "100vh", display: "block" }}
+        style={{ width: "100dvw", height: "100dvh", display: "block" }}
       />
       <NavBar currentPage={page} onNavigate={handleNavigate} />
       <AboutPage visible={page === "about"} />
