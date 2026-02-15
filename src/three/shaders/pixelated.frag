@@ -6,6 +6,8 @@ uniform float pixelSize;
 uniform int toonSteps;
 uniform float toonSoftness;
 uniform float cloudTime;
+uniform float bloomIntensity;
+uniform float bloomThreshold;
 uniform mat4 inverseProjectionMatrix;
 uniform mat4 inverseViewMatrix;
 
@@ -170,6 +172,32 @@ void main() {
 
     // Mix between toon color and black based on edge strength
     vec3 finalColor = toonColor * coefficient;
+
+    // Bloom: sample bright pixels in a cross pattern and add glow
+    vec3 bloom = vec3(0.0);
+    float totalWeight = 0.0;
+    vec2 texelSize = resolution.zw;
+
+    for (int x = -2; x <= 2; x++) {
+        for (int y = -2; y <= 2; y++) {
+            if (x == 0 && y == 0) continue;
+            // Cross pattern: skip corners of the 5x5 grid
+            if (abs(x) == 2 && abs(y) == 2) continue;
+            if (abs(x) == 1 && abs(y) == 2) continue;
+            if (abs(x) == 2 && abs(y) == 1) continue;
+
+            float dist = length(vec2(float(x), float(y)));
+            float weight = 1.0 / (1.0 + dist * dist);
+
+            vec3 sampleColor = texture2D(tDiffuse, vUv + vec2(float(x), float(y)) * texelSize).rgb;
+            float sampleLum = getLuminance(sampleColor);
+            vec3 bright = sampleColor * max(0.0, sampleLum - bloomThreshold);
+            bloom += bright * weight;
+            totalWeight += weight;
+        }
+    }
+    bloom /= totalWeight;
+    finalColor += bloom * bloomIntensity;
 
     gl_FragColor = vec4(finalColor, texel.a);
 }

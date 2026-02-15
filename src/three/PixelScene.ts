@@ -214,6 +214,8 @@ export class PixelScene {
         pixelSize: sceneConfig.render.pixelSize,
         toonSoftness: sceneConfig.render.toonSoftness,
         toonSteps: sceneConfig.render.toonSteps,
+        bloomIntensity: sceneConfig.render.bloom.intensity,
+        bloomThreshold: sceneConfig.render.bloom.threshold,
       },
     );
     this.pixelPass.renderToScreen = true;
@@ -489,8 +491,10 @@ export class PixelScene {
       placed.push({ x, z });
 
       const clone = bases[i % bases.length].clone();
-      clone.castShadow = true;
-      clone.receiveShadow = true;
+      clone.traverse((child) => {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      });
       clone.position.set(x, opts.groundY, z);
       clone.scale.setScalar(
         opts.scaleMin + Math.random() * (opts.scaleMax - opts.scaleMin),
@@ -514,6 +518,8 @@ export class PixelScene {
       branchProbability: lightning.branchProbability,
       animationSpeed: lightning.animationSpeed,
       targets: lightning.targets,
+      restrikeProbability: lightning.restrikeProbability,
+      restrikeInterval: lightning.restrikeInterval,
     });
 
     this.scene.add(this.lightningSystem.getGroup());

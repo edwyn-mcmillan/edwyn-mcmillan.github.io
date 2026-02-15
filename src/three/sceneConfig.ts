@@ -10,6 +10,7 @@ export const sceneConfig = {
     zoomedPixelSize: 1.5,
     toonSoftness: 0.05,
     toonSteps: 8,
+    bloom: { intensity: 0.8, threshold: 0.5 },
   },
 
   colors: {
@@ -31,7 +32,7 @@ export const sceneConfig = {
   crystal: {
     radius: 0.8,
     emissive: 0x1a0a66,
-    emissiveIntensity: 0.8,
+    emissiveIntensity: 0.9,
     shininess: 10,
     specular: 0x007dff,
     baseY: 4.5,
@@ -47,9 +48,9 @@ export const sceneConfig = {
       bounceSpeed: 1,
     },
     light: {
-      intensityScale: 0.5,
-      intensityMin: 50,
-      intensityMax: 150,
+      intensityScale: 0.6,
+      intensityMin: 70,
+      intensityMax: 170,
     },
   },
 
@@ -91,10 +92,10 @@ export const sceneConfig = {
       intensity: 2.5,
       position: new THREE.Vector3(15, 20, 10),
       shadow: {
-        bounds: 50,
+        bounds: 80,
         near: 0.1,
-        far: 80,
-        mapSize: 2048,
+        far: 120,
+        mapSize: 4096,
         bias: -0.0001,
       },
     },
@@ -119,6 +120,8 @@ export const sceneConfig = {
     segmentsPerBolt: 5,
     branchProbability: 0.9,
     animationSpeed: 5,
+    restrikeProbability: 0.2,
+    restrikeInterval: 0.4,
     targets: [
       new THREE.Vector3(3, 8, -2),
       new THREE.Vector3(3, 6, -2),

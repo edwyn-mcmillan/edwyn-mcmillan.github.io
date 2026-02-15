@@ -26,6 +26,8 @@ export interface PixelatedPassParams {
   pixelSize: number;
   toonSteps: number;
   toonSoftness: number;
+  bloomIntensity: number;
+  bloomThreshold: number;
 }
 
 export class RenderPixelatedPass extends Pass {
@@ -40,6 +42,8 @@ export class RenderPixelatedPass extends Pass {
   public pixelSize: number;
   public toonSteps: number;
   public toonSoftness: number;
+  public bloomIntensity: number;
+  public bloomThreshold: number;
   gui?: GUI;
 
   constructor(
@@ -54,6 +58,8 @@ export class RenderPixelatedPass extends Pass {
     this.pixelSize = params.pixelSize;
     this.toonSteps = params.toonSteps;
     this.toonSoftness = params.toonSoftness;
+    this.bloomIntensity = params.bloomIntensity;
+    this.bloomThreshold = params.bloomThreshold;
 
     this.fsQuad = new FullScreenQuad(this.material());
     this.scene = scene;
@@ -108,6 +114,8 @@ export class RenderPixelatedPass extends Pass {
     uniforms.pixelSize.value = this.pixelSize;
     uniforms.toonSteps.value = this.toonSteps;
     uniforms.toonSoftness.value = this.toonSoftness;
+    uniforms.bloomIntensity.value = this.bloomIntensity;
+    uniforms.bloomThreshold.value = this.bloomThreshold;
   }
 
   updateCloudTime(time: number) {
@@ -208,6 +216,8 @@ export class RenderPixelatedPass extends Pass {
         pixelSize: { value: this.pixelSize },
         toonSteps: { value: this.toonSteps },
         toonSoftness: { value: this.toonSoftness },
+        bloomIntensity: { value: this.bloomIntensity },
+        bloomThreshold: { value: this.bloomThreshold },
         cloudTime: { value: 0 },
         inverseProjectionMatrix: { value: new THREE.Matrix4() },
         inverseViewMatrix: { value: new THREE.Matrix4() },

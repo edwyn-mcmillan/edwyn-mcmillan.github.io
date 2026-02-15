@@ -12,6 +12,8 @@ export interface LightningParticleSystemParams {
   branchProbability: number;
   animationSpeed: number;
   targets: readonly THREE.Vector3[];
+  restrikeProbability: number;
+  restrikeInterval: number;
 }
 
 interface LightningBolt {
@@ -21,6 +23,9 @@ interface LightningBolt {
   lifetime: number;
   progress: number;
   line: THREE.LineSegments;
+  restrikes: number;
+  restrikeTimer: number;
+  restrikePhase: number; // 0 = visible, 1 = dark
 }
 
 export class LightningParticleSystem {
@@ -62,6 +67,24 @@ export class LightningParticleSystem {
         (bolt.line.material as THREE.Material).dispose();
         this.bolts.splice(i, 1);
         continue;
+      }
+
+      // Restrike cycle
+      if (bolt.restrikes > 0) {
+        bolt.restrikeTimer += delta;
+        if (bolt.restrikeTimer >= this.params.restrikeInterval) {
+          bolt.restrikeTimer = 0;
+          if (bolt.restrikePhase === 0) {
+            // Was visible, go dark
+            bolt.restrikePhase = 1;
+          } else {
+            // Was dark, flash on again and consume a restrike
+            bolt.restrikePhase = 0;
+            bolt.restrikes--;
+            // Jitter segments slightly for variation on each restrike
+            this.jitterSegments(bolt);
+          }
+        }
       }
 
       this.updateBoltGeometry(bolt);
@@ -126,6 +149,7 @@ export class LightningParticleSystem {
     line.layers.set(LAYER_NO_EDGE_DETECTION);
     this.group.add(line);
 
+    const willRestrike = Math.random() < this.params.restrikeProbability;
     this.bolts.push({
       segments,
       branches,
@@ -133,6 +157,9 @@ export class LightningParticleSystem {
       lifetime: this.params.boltLifetime * (0.8 + Math.random() * 0.4),
       progress: 0,
       line,
+      restrikes: willRestrike ? 2 + Math.floor(Math.random() * 2) : 0, // 2-3 restrikes
+      restrikeTimer: 0,
+      restrikePhase: 0, // start visible
     });
   }
 
@@ -173,7 +200,30 @@ export class LightningParticleSystem {
     const color = this.params.glowColor.clone().lerp(this.params.color, time);
     const mat = bolt.line.material as THREE.LineBasicMaterial;
     mat.color.copy(color);
-    mat.opacity = 1 - time + flash * 0.5;
+
+    // Restrike dimming: dark phase dims to 0.1, each subsequent restrike is dimmer
+    let baseOpacity = 1 - time + flash * 0.5;
+    if (bolt.restrikes > 0 && bolt.restrikePhase === 1) {
+      baseOpacity *= 0.1;
+    }
+    mat.opacity = baseOpacity;
+  }
+
+  private jitterSegments(bolt: LightningBolt) {
+    const jitterAmount = 0.15;
+    // Skip first and last segments to keep endpoints stable
+    for (let i = 1; i < bolt.segments.length - 1; i++) {
+      bolt.segments[i].x += (Math.random() - 0.5) * jitterAmount;
+      bolt.segments[i].y += (Math.random() - 0.5) * jitterAmount;
+      bolt.segments[i].z += (Math.random() - 0.5) * jitterAmount;
+    }
+    for (const branch of bolt.branches) {
+      for (let i = 1; i < branch.length; i++) {
+        branch[i].x += (Math.random() - 0.5) * jitterAmount;
+        branch[i].y += (Math.random() - 0.5) * jitterAmount;
+        branch[i].z += (Math.random() - 0.5) * jitterAmount;
+      }
+    }
   }
 
   private createBranch(
