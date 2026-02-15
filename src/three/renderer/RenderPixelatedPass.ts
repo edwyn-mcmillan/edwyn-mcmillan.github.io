@@ -118,14 +118,20 @@ export class RenderPixelatedPass extends Pass {
     renderer.render(this.scene, this.camera);
 
     // Render normals for edge detection — only default layer (excludes grass/lightning)
+    // Disable shadows during normal pass to prevent artifacts on receiveShadow objects
     renderer.setRenderTarget(this.normalRenderTarget);
     const savedLayers = this.camera.layers.mask;
     this.camera.layers.set(LAYER_DEFAULT);
+
+    const savedShadowEnabled = renderer.shadowMap.enabled;
+    renderer.shadowMap.enabled = false;
 
     const overrideMaterial_old = this.scene.overrideMaterial;
     this.scene.overrideMaterial = this.normalMaterial;
     renderer.render(this.scene, this.camera);
     this.scene.overrideMaterial = overrideMaterial_old;
+
+    renderer.shadowMap.enabled = savedShadowEnabled;
 
     // Restore camera layers to see all objects
     this.camera.layers.mask = savedLayers;

@@ -15,27 +15,32 @@ float getLuminance(vec3 color) {
 
 vec3 applyToonShading(vec3 color, int steps, float softness) {
     float lum = getLuminance(color);
-    
+
+    // For very dark pixels, blend back to original to avoid crushing to black
+    float darkBlend = smoothstep(0.0, 0.15, lum);
+
     float numSteps = max(float(steps), 2.0);
     float stepSize = 1.0 / numSteps;
-    
+
     float stepIndex = floor(lum / stepSize);
     float lowerStep = stepIndex * stepSize;
     float upperStep = (stepIndex + 1.0) * stepSize;
-    
+
     float stepPos = (lum - lowerStep) / stepSize;
-    
+
     float smoothRange = clamp(softness, 0.0, 1.0);
     float smoothed = smoothstep(0.5 - smoothRange * 0.5, 0.5 + smoothRange * 0.5, stepPos);
-    
-    // Clamp so we never go pure black
+
     float finalLum = mix(lowerStep, upperStep, smoothed);
-    finalLum = max(finalLum, 0.02);
-    
+    finalLum = max(finalLum, stepSize * 0.5);
+
     vec3 steppedColor = color * (finalLum / max(lum, 0.001));
-    
+
     float colorPreservation = 0.3;
-    return mix(steppedColor, color, colorPreservation * stepPos);
+    vec3 toonResult = mix(steppedColor, color, colorPreservation * stepPos);
+
+    // Blend: dark areas pass through original color, bright areas get toon shading
+    return mix(color, toonResult, darkBlend);
 }
 
 // Edge detection

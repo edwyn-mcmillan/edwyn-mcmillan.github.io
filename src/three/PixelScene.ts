@@ -15,6 +15,7 @@ export class PixelScene {
 
   shape!: THREE.Mesh;
   shapeLight!: THREE.PointLight;
+  shapeFillLight!: THREE.PointLight;
   ground!: THREE.Mesh;
   grassSystem!: GrassSystem;
   lightningSystem!: LightningParticleSystem;
@@ -46,6 +47,8 @@ export class PixelScene {
     this.setupShapeLights();
     this.setupLightning();
     this.setupPillar();
+    this.setupRocks();
+    this.setupTrees();
 
     this.setupPixelPass();
     window.addEventListener("resize", () => this.onResize());
@@ -232,6 +235,7 @@ export class PixelScene {
       new THREE.MeshPhongMaterial({
         color: colors.crystal,
         emissive: crystal.emissive,
+        emissiveIntensity: crystal.emissiveIntensity,
         shininess: crystal.shininess,
         specular: crystal.specular,
       }),
@@ -276,6 +280,11 @@ export class PixelScene {
       0.1,
     );
     this.shapeLight.position.copy(this.shape.position);
+    this.shapeFillLight.position.set(
+      this.shape.position.x,
+      this.shape.position.y - 2,
+      this.shape.position.z,
+    );
     this.shapeLight.intensity = THREE.MathUtils.clamp(
       (1 / distanceToGround) * light.intensityScale,
       light.intensityMin,
@@ -355,6 +364,7 @@ export class PixelScene {
     keyLight.shadow.mapSize.height = lighting.key.shadow.mapSize;
 
     keyLight.shadow.bias = lighting.key.shadow.bias;
+    keyLight.shadow.normalBias = 0.5;
 
     this.scene.add(keyLight);
 
@@ -365,11 +375,12 @@ export class PixelScene {
     fillLight.position.copy(lighting.fill.position);
     this.scene.add(fillLight);
 
-    const ambientLight = new THREE.AmbientLight(
-      lighting.ambient2.color,
-      lighting.ambient2.intensity,
+    const rimLight = new THREE.DirectionalLight(
+      lighting.rim.color,
+      lighting.rim.intensity,
     );
-    this.scene.add(ambientLight);
+    rimLight.position.copy(lighting.rim.position);
+    this.scene.add(rimLight);
   }
 
   private setupShapeLights(): void {
@@ -382,6 +393,15 @@ export class PixelScene {
     );
     this.shapeLight.position.copy(this.shape.position);
     this.scene.add(this.shapeLight);
+
+    // Fill light below the crystal to illuminate the underside
+    this.shapeFillLight = new THREE.PointLight(0x0044ff, 8, 4, 1);
+    this.shapeFillLight.position.set(
+      this.shape.position.x,
+      this.shape.position.y - 2,
+      this.shape.position.z,
+    );
+    this.scene.add(this.shapeFillLight);
   }
 
   private async setupPillar(): Promise<void> {
@@ -392,13 +412,114 @@ export class PixelScene {
 
     ModelLoader.convertToToonMaterial(pillar, sceneConfig.colors.pillar);
     pillar.castShadow = true;
-    pillar.receiveShadow = false;
+    pillar.receiveShadow = true;
     pillar.position.copy(cfg.position);
     pillar.scale.setScalar(cfg.scale);
     pillar.rotation.y = cfg.rotationY;
 
     this.pillar = pillar;
     this.scene.add(pillar);
+  }
+
+  private async setupRocks(): Promise<void> {
+    const { rocks, ground } = sceneConfig;
+    const loader = new ModelLoader();
+    await loader.load(rocks.modelPath);
+    const baseRock = loader.getChildModel(0);
+    ModelLoader.setMaterial(baseRock, new THREE.MeshToonMaterial({ color: rocks.color }));
+
+    this.scatterInRing([baseRock], {
+      count: rocks.count,
+      radius: rocks.radius,
+      radiusJitter: rocks.radiusJitter,
+      angleJitter: rocks.angleJitter,
+      scaleMin: rocks.scaleMin,
+      scaleMax: rocks.scaleMax,
+      groundY: ground.y,
+    });
+  }
+
+  private async setupTrees(): Promise<void> {
+    const { trees, ground } = sceneConfig;
+    const loader = new ModelLoader();
+    await loader.load(trees.modelPath);
+
+    const baseMeshes = loader.getBakedMeshes(2, trees.meshCount);
+    for (const mesh of baseMeshes) {
+      ModelLoader.applyToMaterials(mesh, (mat) => {
+        mat.side = THREE.DoubleSide;
+        mat.transparent = false;
+        mat.opacity = 1;
+        if (mat.map) mat.map.premultiplyAlpha = false;
+        if (mat.emissive) {
+          mat.emissiveMap = mat.map;
+          mat.emissive.set(0xffffff);
+          mat.emissiveIntensity = 0.6;
+        }
+        mat.needsUpdate = true;
+      });
+    }
+
+    this.scatterInRing(baseMeshes, {
+      count: trees.count,
+      radius: trees.radius,
+      radiusJitter: trees.radiusJitter,
+      scaleMin: trees.scaleMin,
+      scaleMax: trees.scaleMax,
+      groundY: ground.y,
+      minSpacing: 3,
+    });
+  }
+
+  /** Scatter clones of base meshes in a ring around the origin. */
+  private scatterInRing(
+    bases: THREE.Object3D[],
+    opts: {
+      count: number;
+      radius: number;
+      radiusJitter: number;
+      scaleMin: number;
+      scaleMax: number;
+      groundY: number;
+      angleJitter?: number;
+      minSpacing?: number;
+    },
+  ): void {
+    const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+    const placed: { x: number; z: number }[] = [];
+    let attempts = 0;
+
+    for (let i = 0; i < opts.count && attempts < opts.count * 3; attempts++) {
+      const baseAngle = opts.minSpacing
+        ? i * goldenAngle
+        : (i / opts.count) * Math.PI * 2;
+      const angle =
+        baseAngle + (Math.random() - 0.5) * (opts.angleJitter ?? 0.4);
+      const r =
+        opts.radius + (Math.random() - 0.5) * 2 * opts.radiusJitter;
+      const x = Math.cos(angle) * r;
+      const z = Math.sin(angle) * r;
+
+      if (opts.minSpacing) {
+        const tooClose = placed.some(
+          (p) => (p.x - x) ** 2 + (p.z - z) ** 2 < opts.minSpacing! ** 2,
+        );
+        if (tooClose) continue;
+      }
+
+      placed.push({ x, z });
+
+      const clone = bases[i % bases.length].clone();
+      clone.castShadow = true;
+      clone.receiveShadow = true;
+      clone.position.set(x, opts.groundY, z);
+      clone.scale.setScalar(
+        opts.scaleMin + Math.random() * (opts.scaleMax - opts.scaleMin),
+      );
+      clone.rotation.y = Math.random() * Math.PI * 2;
+      this.scene.add(clone);
+      i++;
+    }
   }
 
   private setupLightning(): void {

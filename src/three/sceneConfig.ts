@@ -30,7 +30,8 @@ export const sceneConfig = {
 
   crystal: {
     radius: 0.8,
-    emissive: 0x7d0000,
+    emissive: 0x1a0a66,
+    emissiveIntensity: 0.8,
     shininess: 10,
     specular: 0x007dff,
     baseY: 4.5,
@@ -84,26 +85,30 @@ export const sceneConfig = {
   },
 
   lighting: {
-    ambient: { color: 0x29364d, intensity: 0.5 },
+    ambient: { color: 0x1a1a2e, intensity: 0.6 },
     key: {
-      color: 0xfffc9c,
-      intensity: 3,
-      position: new THREE.Vector3(9, 4, 3),
+      color: 0xffeabc,
+      intensity: 2.5,
+      position: new THREE.Vector3(15, 20, 10),
       shadow: {
-        bounds: 30,
+        bounds: 50,
         near: 0.1,
-        far: 50,
+        far: 80,
         mapSize: 2048,
         bias: -0.0001,
       },
     },
     fill: {
-      color: 0x88aaff,
-      intensity: 2.5,
-      position: new THREE.Vector3(-6, 2, 4),
+      color: 0x6688cc,
+      intensity: 1.5,
+      position: new THREE.Vector3(-10, 3, 8),
     },
-    ambient2: { color: 0x88aaff, intensity: 1.25 },
-    shape: { color: 0x00aaff, intensity: 0.5, distance: 5, decay: 1 },
+    rim: {
+      color: 0xffd4a0,
+      intensity: 1.8,
+      position: new THREE.Vector3(-8, 12, -15),
+    },
+    shape: { color: 0x4488ff, intensity: 1.2, distance: 8, decay: 1.5 },
   },
 
   lightning: {
@@ -133,5 +138,26 @@ export const sceneConfig = {
     position: new THREE.Vector3(3, -1.5, -2),
     scale: 3,
     rotationY: Math.PI / 4,
+  },
+
+  rocks: {
+    modelPath: "assets/low_poly_rocks.glb",
+    color: new THREE.Color(0x857e7e),
+    count: 9,
+    radius: 17,
+    radiusJitter: 2,
+    scaleMin: 4,
+    scaleMax: 9,
+    angleJitter: 0.25,
+  },
+
+  trees: {
+    modelPath: "assets/low_poly_trees.glb",
+    meshCount: 2,
+    count: 120,
+    radius: 45,
+    radiusJitter: 20,
+    scaleMin: 9,
+    scaleMax: 12,
   },
 } as const;

@@ -21,7 +21,7 @@ export function PanHint({ visible }: PanHintProps) {
     const rafId = requestAnimationFrame(() => setShow(true));
 
     // auto-hide after 3s
-    const timer = setTimeout(() => setShow(false), 3000);
+    const timer = setTimeout(() => setShow(false), 5000);
 
     return () => {
       cancelAnimationFrame(rafId);

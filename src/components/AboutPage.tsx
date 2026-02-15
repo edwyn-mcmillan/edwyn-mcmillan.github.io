@@ -42,9 +42,8 @@ export function AboutPage({ visible }: AboutPageProps) {
           <div className="about-section">
             <h2>ABOUT</h2>
             <p>
-              Fullstack engineer building production software in the aerospace
-              industry. I work across the full stack — from frontend to
-              infrastructure — and enjoy creative coding in my spare time.
+              I am a Fullstack engineer building production software in the
+              aerospace industry. I enjoy creative coding in my spare time.
             </p>
           </div>
 

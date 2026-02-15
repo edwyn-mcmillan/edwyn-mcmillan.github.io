@@ -26,12 +26,14 @@ export function Home() {
     const scene = sceneRef.current;
     if (!scene) return;
 
-    if (target === "about" && page !== "about") {
+    if (target === "about") {
       scene.zoomToShape();
       setTimeout(() => setPage("about"), 1200);
-    } else if (target === "home" && page !== "home") {
-      setPage("home");
+    }
+
+    if (target === "home") {
       scene.zoomOut();
+      setPage("home");
     }
   };
 

@@ -6,7 +6,7 @@ interface NavBarProps {
 export function NavBar({ currentPage, onNavigate }: NavBarProps) {
   return (
     <nav className="nav">
-      <span className="nav-title">PORTFOLIO</span>
+      <span className="nav-title">Edwyn McMillan</span>
       <ul className="nav-links">
         <li>
           <button
