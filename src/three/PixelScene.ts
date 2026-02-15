@@ -56,31 +56,28 @@ export class PixelScene {
     this.pixelCamera.controls.enableZoom = false;
     this.pixelCamera.controls.enablePan = false;
 
-    // Lock vertical tilt so user can only pan horizontally
+    // Allow panning upward but never lower than the starting angle
     const polarAngle = this.pixelCamera.controls.getPolarAngle();
-    this.pixelCamera.controls.minPolarAngle = polarAngle;
+    this.pixelCamera.controls.minPolarAngle = 0;
     this.pixelCamera.controls.maxPolarAngle = polarAngle;
 
     // Store original camera state for zoom out
     this.originalCameraPos.copy(this.pixelCamera.camera.position);
     this.originalTarget.copy(this.pixelCamera.controls.target);
 
-    // Enable camera to see both default and no-edge-detection layers
     this.pixelCamera.camera.layers.enable(LAYER_NO_EDGE_DETECTION);
 
     const loop = () => {
       const delta = this.clock.getDelta();
 
-      // Smoothly blend zoom damping (matched to 1.5s camera transition)
-      const blendSpeed = 0.67;
       if (this.zoomBlend < this.zoomBlendTarget) {
         this.zoomBlend = Math.min(
-          this.zoomBlend + delta * blendSpeed,
+          this.zoomBlend + delta * sceneConfig.zoom.blendSpeed,
           this.zoomBlendTarget,
         );
       } else if (this.zoomBlend > this.zoomBlendTarget) {
         this.zoomBlend = Math.max(
-          this.zoomBlend - delta * blendSpeed,
+          this.zoomBlend - delta * sceneConfig.zoom.blendSpeed,
           this.zoomBlendTarget,
         );
       }
@@ -99,7 +96,8 @@ export class PixelScene {
 
       const elapsed = this.clock.elapsedTime;
       if (this.ground.material instanceof THREE.Material) {
-        const groundShader = (this.ground.material as THREE.MeshToonMaterial).userData.shader;
+        const groundShader = (this.ground.material as THREE.MeshToonMaterial)
+          .userData.shader;
         if (groundShader?.uniforms.cloudTime) {
           groundShader.uniforms.cloudTime.value = elapsed;
         }
@@ -126,17 +124,25 @@ export class PixelScene {
   zoomToShape(): void {
     this.zoomed = true;
     this.zoomBlendTarget = 1;
-    const offset = new THREE.Vector3(2, 1, 3).normalize().multiplyScalar(1.5);
+    const offset = sceneConfig.zoom.offsetDirection
+      .clone()
+      .normalize()
+      .multiplyScalar(sceneConfig.zoom.offsetDistance);
     const target = this.shape.position.clone();
     const position = target.clone().add(offset);
-    this.pixelCamera.transitionTo(position, target, 1.5, {
-      liveEndTarget: () => this.shape.position,
-      liveEndPos: () => this.shape.position.clone().add(offset),
-    });
+    this.pixelCamera.transitionTo(
+      position,
+      target,
+      sceneConfig.zoom.transitionDuration,
+      {
+        liveEndTarget: () => this.shape.position,
+        liveEndPos: () => this.shape.position.clone().add(offset),
+      },
+    );
     this.animatePixelSize(
       sceneConfig.render.pixelSize,
       sceneConfig.render.zoomedPixelSize,
-      1.5,
+      sceneConfig.zoom.transitionDuration,
     );
   }
 
@@ -146,17 +152,17 @@ export class PixelScene {
     this.pixelCamera.transitionTo(
       this.originalCameraPos,
       this.originalTarget,
-      1.5,
+      sceneConfig.zoom.transitionDuration,
     );
     this.animatePixelSize(
       sceneConfig.render.zoomedPixelSize,
       sceneConfig.render.pixelSize,
-      1.5,
+      sceneConfig.zoom.transitionDuration,
     );
-    // Re-enable orbit after transition completes (controls re-enabled isn't automatic)
+    // Re-enable orbit after transition completes
     setTimeout(() => {
       this.pixelCamera.controls.enabled = true;
-    }, 1600);
+    }, sceneConfig.zoom.reEnableDelay);
   }
 
   private animatePixelSize(from: number, to: number, duration: number): void {
@@ -220,13 +226,14 @@ export class PixelScene {
   }
 
   private setupShape(): void {
+    const { crystal, colors } = sceneConfig;
     this.shape = new THREE.Mesh(
-      new THREE.IcosahedronGeometry(0.8),
+      new THREE.IcosahedronGeometry(crystal.radius),
       new THREE.MeshPhongMaterial({
-        color: sceneConfig.colors.crystal,
-        emissive: 0x7d0000,
-        shininess: 10,
-        specular: 0x007dff,
+        color: colors.crystal,
+        emissive: crystal.emissive,
+        shininess: crystal.shininess,
+        specular: crystal.specular,
       }),
     );
     this.shape.receiveShadow = true;
@@ -235,52 +242,63 @@ export class PixelScene {
   }
 
   private animateShape(time: number): void {
+    const { animation, baseY, light } = sceneConfig.crystal;
     const b = this.zoomBlend;
-    const cycleSpeed = 1;
-    const envelope = Math.sin(this.clock.elapsedTime * cycleSpeed) * 0.5 + 0.5;
+
+    const envelope =
+      Math.sin(this.clock.elapsedTime * animation.cycleSpeed) * 0.5 + 0.5;
     const easedEnvelope = THREE.MathUtils.smoothstep(envelope, 0.1, 0.9);
-    const fastSpin = 2;
-    const slowSpin = 0.5;
     const baseRotSpeed = THREE.MathUtils.lerp(
-      slowSpin,
-      fastSpin,
+      animation.slowSpin,
+      animation.fastSpin,
       easedEnvelope,
     );
-    const rotSpeed = THREE.MathUtils.lerp(baseRotSpeed, baseRotSpeed * 0.08, b);
+    const rotSpeed = THREE.MathUtils.lerp(
+      baseRotSpeed,
+      baseRotSpeed * animation.zoomedSpinDamping,
+      b,
+    );
     this.shape.rotation.y += rotSpeed * time;
-    this.shape.rotation.x += rotSpeed * 0.5 * time;
-    this.shape.rotation.z += rotSpeed * 1.5 * time;
+    this.shape.rotation.x += rotSpeed * animation.rotationX * time;
+    this.shape.rotation.z += rotSpeed * animation.rotationZ * time;
 
-    const bounceHeight = THREE.MathUtils.lerp(1, 0.1, b);
-    const bounceSpeed = 1;
+    const bounceHeight = THREE.MathUtils.lerp(
+      animation.bounceHeight,
+      animation.zoomedBounceHeight,
+      b,
+    );
     this.shape.position.y =
-      4.5 + Math.sin(this.clock.elapsedTime * bounceSpeed) * bounceHeight;
+      baseY +
+      Math.sin(this.clock.elapsedTime * animation.bounceSpeed) * bounceHeight;
 
-    const groundY = -1.5;
-    const distanceToGround = Math.max(this.shape.position.y - groundY, 0.1);
+    const distanceToGround = Math.max(
+      this.shape.position.y - sceneConfig.ground.y,
+      0.1,
+    );
     this.shapeLight.position.copy(this.shape.position);
     this.shapeLight.intensity = THREE.MathUtils.clamp(
-      (1 / distanceToGround) * 0.5,
-      50,
-      150,
+      (1 / distanceToGround) * light.intensityScale,
+      light.intensityMin,
+      light.intensityMax,
     );
   }
 
   private setupGround(): void {
-    const groundGeo = new THREE.PlaneGeometry(450, 450);
+    const { ground, colors, grass } = sceneConfig;
+    const groundGeo = new THREE.PlaneGeometry(ground.size, ground.size);
 
     const groundMat = new GroundMaterial({
-      color1: sceneConfig.colors.ground1,
-      color2: sceneConfig.colors.ground2,
-      color3: sceneConfig.colors.ground3,
-      noiseScale: sceneConfig.grass.noiseScale,
-      octaves: sceneConfig.grass.octaves,
-      persistence: sceneConfig.grass.persistence,
+      color1: colors.ground1,
+      color2: colors.ground2,
+      color3: colors.ground3,
+      noiseScale: grass.noiseScale,
+      octaves: grass.octaves,
+      persistence: grass.persistence,
     });
 
     this.ground = new THREE.Mesh(groundGeo, groundMat);
     this.ground.rotation.x = -Math.PI / 2;
-    this.ground.position.y = -1.5;
+    this.ground.position.y = ground.y;
     this.ground.receiveShadow = true;
     this.scene.add(this.ground);
 
@@ -288,24 +306,21 @@ export class PixelScene {
   }
 
   private setupGrass(): void {
+    const { grass, colors, ground } = sceneConfig;
     this.grassSystem = new GrassSystem({
-      count: sceneConfig.grass.count,
-      areaSize: sceneConfig.grass.areaSize,
-      groundY: -1.5,
-      grassTexturePath: "assets/grass_leaf.png",
-      accentGrassTexturePath: "assets/accent_leaf.png",
-      accentGrassRatio: 0.05,
-      minHeight: 0.3,
-      maxHeight: 0.5,
-      windStrength: 0.2,
-      windDirection: new THREE.Vector2(0.8, 0.15),
+      count: grass.count,
+      areaSize: grass.areaSize,
+      groundY: ground.y,
+      grassTexturePath: grass.texturePath,
+      accentGrassTexturePath: grass.accentTexturePath,
+      accentGrassRatio: grass.accentRatio,
+      minHeight: grass.minHeight,
+      maxHeight: grass.maxHeight,
+      windStrength: grass.windStrength,
+      windDirection: grass.windDirection,
       groundMesh: this.ground,
-      groundColors: [
-        sceneConfig.colors.ground1,
-        sceneConfig.colors.ground2,
-        sceneConfig.colors.ground3,
-      ],
-      accentColor: sceneConfig.colors.grassAccent,
+      groundColors: [colors.ground1, colors.ground2, colors.ground3],
+      accentColor: colors.grassAccent,
     });
 
     const grassMeshes = this.grassSystem.getMeshes();
@@ -316,7 +331,10 @@ export class PixelScene {
     const { lighting } = sceneConfig;
 
     this.scene.add(
-      new THREE.AmbientLight(lighting.ambient.color, lighting.ambient.intensity),
+      new THREE.AmbientLight(
+        lighting.ambient.color,
+        lighting.ambient.intensity,
+      ),
     );
 
     const keyLight = new THREE.DirectionalLight(
@@ -367,33 +385,35 @@ export class PixelScene {
   }
 
   private async setupPillar(): Promise<void> {
+    const { pillar: cfg } = sceneConfig;
     const pillarsLoader = new ModelLoader();
-    await pillarsLoader.load("assets/stone_arch_pillars.glb");
-    const pillar = pillarsLoader.getChildModel(5);
+    await pillarsLoader.load(cfg.modelPath);
+    const pillar = pillarsLoader.getChildModel(cfg.childIndex);
 
     ModelLoader.convertToToonMaterial(pillar, sceneConfig.colors.pillar);
     pillar.castShadow = true;
     pillar.receiveShadow = false;
-    pillar.position.set(3, -1.5, -2);
-    pillar.scale.setScalar(3);
-    pillar.rotation.y = Math.PI / 4;
+    pillar.position.copy(cfg.position);
+    pillar.scale.setScalar(cfg.scale);
+    pillar.rotation.y = cfg.rotationY;
 
     this.pillar = pillar;
     this.scene.add(pillar);
   }
 
   private setupLightning(): void {
+    const { lightning, colors } = sceneConfig;
     this.lightningSystem = new LightningParticleSystem({
-      boltsPerSecond: 15,
-      boltLifetime: 0.8,
-      maxBolts: 15,
-      color: sceneConfig.colors.bolt,
-      glowColor: sceneConfig.colors.boltGlow,
-      boltLength: 2,
-      segmentsPerBolt: 5,
-      branchProbability: 0.9,
-      animationSpeed: 5,
-      targets: sceneConfig.lightning.targets,
+      boltsPerSecond: lightning.boltsPerSecond,
+      boltLifetime: lightning.boltLifetime,
+      maxBolts: lightning.maxBolts,
+      color: colors.bolt,
+      glowColor: colors.boltGlow,
+      boltLength: lightning.boltLength,
+      segmentsPerBolt: lightning.segmentsPerBolt,
+      branchProbability: lightning.branchProbability,
+      animationSpeed: lightning.animationSpeed,
+      targets: lightning.targets,
     });
 
     this.scene.add(this.lightningSystem.getGroup());
