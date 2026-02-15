@@ -6,7 +6,7 @@ export const LAYER_NO_EDGE_DETECTION = 1;
 export const sceneConfig = {
   render: {
     pixelResolution: new THREE.Vector2(320, 180),
-    pixelSize: 0.6,
+    pixelSize: 0.5,
     zoomedPixelSize: 1.5,
     toonSoftness: 0.05,
     toonSteps: 8,

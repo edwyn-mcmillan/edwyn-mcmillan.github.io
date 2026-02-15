@@ -15,7 +15,6 @@ export class PixelScene {
 
   shape!: THREE.Mesh;
   shapeLight!: THREE.PointLight;
-  shapeFillLight!: THREE.PointLight;
   ground!: THREE.Mesh;
   grassSystem!: GrassSystem;
   lightningSystem!: LightningParticleSystem;
@@ -272,11 +271,6 @@ export class PixelScene {
       0.1,
     );
     this.shapeLight.position.copy(this.shape.position);
-    this.shapeFillLight.position.set(
-      this.shape.position.x,
-      this.shape.position.y - 2,
-      this.shape.position.z,
-    );
     this.shapeLight.intensity = THREE.MathUtils.clamp(
       (1 / distanceToGround) * light.intensityScale,
       light.intensityMin,
@@ -385,15 +379,6 @@ export class PixelScene {
     );
     this.shapeLight.position.copy(this.shape.position);
     this.scene.add(this.shapeLight);
-
-    // Fill light below the crystal to illuminate the underside
-    this.shapeFillLight = new THREE.PointLight(0x0044ff, 8, 4, 1);
-    this.shapeFillLight.position.set(
-      this.shape.position.x,
-      this.shape.position.y - 2,
-      this.shape.position.z,
-    );
-    this.scene.add(this.shapeFillLight);
   }
 
   private async setupPillar(): Promise<void> {
@@ -418,7 +403,10 @@ export class PixelScene {
     const loader = new ModelLoader();
     await loader.load(rocks.modelPath);
     const baseRock = loader.getChildModel(0);
-    ModelLoader.setMaterial(baseRock, new THREE.MeshToonMaterial({ color: rocks.color }));
+    ModelLoader.setMaterial(
+      baseRock,
+      new THREE.MeshToonMaterial({ color: rocks.color }),
+    );
 
     this.scatterInRing([baseRock], {
       count: rocks.count,
@@ -487,8 +475,7 @@ export class PixelScene {
         : (i / opts.count) * Math.PI * 2;
       const angle =
         baseAngle + (Math.random() - 0.5) * (opts.angleJitter ?? 0.4);
-      const r =
-        opts.radius + (Math.random() - 0.5) * 2 * opts.radiusJitter;
+      const r = opts.radius + (Math.random() - 0.5) * 2 * opts.radiusJitter;
       const x = Math.cos(angle) * r;
       const z = Math.sin(angle) * r;
 
