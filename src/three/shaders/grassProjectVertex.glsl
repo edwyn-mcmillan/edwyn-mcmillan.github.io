@@ -15,7 +15,6 @@ if (isAccent > 0.5) {
 }
 
 vGroundColor = groundColor;
-vCloudShadow = cloudShadow(instanceWorldPos.xz, cloudTime);
 
 // Calculate billboard vectors
 vec3 lookDir = normalize(cameraPos - instanceWorldPos);

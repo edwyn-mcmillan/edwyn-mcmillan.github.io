@@ -97,15 +97,7 @@ export class PixelScene {
 
       this.grassSystem.update(this.pixelCamera.camera, delta);
 
-      const elapsed = this.clock.elapsedTime;
-      if (this.ground.material instanceof THREE.Material) {
-        const groundShader = (this.ground.material as THREE.MeshToonMaterial)
-          .userData.shader;
-        if (groundShader?.uniforms.cloudTime) {
-          groundShader.uniforms.cloudTime.value = elapsed;
-        }
-      }
-      this.grassSystem.updateCloudTime(elapsed);
+      this.pixelPass.updateCloudTime(this.clock.elapsedTime);
 
       this.lightningSystem.setEmissionSource(this.shape.position);
       this.lightningSystem.update(delta);

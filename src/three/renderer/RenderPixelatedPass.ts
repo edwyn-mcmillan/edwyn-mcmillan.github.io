@@ -110,6 +110,10 @@ export class RenderPixelatedPass extends Pass {
     uniforms.toonSoftness.value = this.toonSoftness;
   }
 
+  updateCloudTime(time: number) {
+    this.getUniforms().cloudTime.value = time;
+  }
+
   render(renderer: WebGLRenderer) {
     this.updateRenderTargets();
 
@@ -140,6 +144,11 @@ export class RenderPixelatedPass extends Pass {
     uniforms.tDiffuse.value = this.rgbRenderTarget.texture;
     uniforms.tDepth.value = this.rgbRenderTarget.depthTexture;
     uniforms.tNormal.value = this.normalRenderTarget.texture;
+
+    // Pass camera matrices for world-space reconstruction
+    const cam = this.camera as THREE.PerspectiveCamera;
+    uniforms.inverseProjectionMatrix.value.copy(cam.projectionMatrixInverse);
+    uniforms.inverseViewMatrix.value.copy(cam.matrixWorld);
 
     this.updateUniforms();
 
@@ -199,6 +208,9 @@ export class RenderPixelatedPass extends Pass {
         pixelSize: { value: this.pixelSize },
         toonSteps: { value: this.toonSteps },
         toonSoftness: { value: this.toonSoftness },
+        cloudTime: { value: 0 },
+        inverseProjectionMatrix: { value: new THREE.Matrix4() },
+        inverseViewMatrix: { value: new THREE.Matrix4() },
       },
       vertexShader,
       fragmentShader,

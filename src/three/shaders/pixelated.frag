@@ -5,8 +5,66 @@ uniform vec4 resolution;
 uniform float pixelSize;
 uniform int toonSteps;
 uniform float toonSoftness;
+uniform float cloudTime;
+uniform mat4 inverseProjectionMatrix;
+uniform mat4 inverseViewMatrix;
 
 varying vec2 vUv;
+
+// --- Noise / FBM / Cloud Shadow (inlined from noise.glsl + cloudShadow.glsl) ---
+
+float hash(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+
+float noise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+
+    float a = hash(i);
+    float b = hash(i + vec2(1.0, 0.0));
+    float c = hash(i + vec2(0.0, 1.0));
+    float d = hash(i + vec2(1.0, 1.0));
+
+    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+
+float fbm(vec2 p, float octaves, float persistence) {
+    float value = 0.0;
+    float amplitude = 1.0;
+    float frequency = 1.0;
+    float maxValue = 0.0;
+
+    for (float i = 0.0; i < 8.0; i++) {
+        if (i >= octaves) break;
+        value += noise(p * frequency) * amplitude;
+        maxValue += amplitude;
+        amplitude *= persistence;
+        frequency *= 2.0;
+    }
+
+    return value / maxValue;
+}
+
+float cloudShadow(vec2 worldXZ, float t) {
+    vec2 uv = worldXZ * 0.02 + vec2(t * 0.04 + 3.7, t * 0.015 + 9.2);
+    float n = fbm(uv, 4.0, 0.5);
+    return mix(0.55, 1.0, smoothstep(0.35, 0.55, n));
+}
+
+// --- World position reconstruction from depth ---
+
+vec3 reconstructWorldPos(vec2 uv, float depth) {
+    // Screen UV to NDC
+    vec4 ndc = vec4(uv * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
+    // NDC to view space
+    vec4 viewPos = inverseProjectionMatrix * ndc;
+    viewPos /= viewPos.w;
+    // View space to world space
+    vec4 worldPos = inverseViewMatrix * viewPos;
+    return worldPos.xyz;
+}
 
 // Toon shading functions
 float getLuminance(vec3 color) {
@@ -89,21 +147,29 @@ float lum(vec4 color) {
 
 void main() {
     vec4 texel = texture2D(tDiffuse, vUv);
-    
-    // Apply toon shading to the original color first
+
+    // Reconstruct world position and apply cloud shadow before toon shading
+    float depth = getDepth(0, 0);
+    if (depth < 1.0) { // only shadow actual geometry, not sky
+        vec3 worldPos = reconstructWorldPos(vUv, depth);
+        float shadow = cloudShadow(worldPos.xz, cloudTime);
+        texel.rgb *= shadow;
+    }
+
+    // Apply toon shading to the shadowed color
     vec3 toonColor = applyToonShading(texel.rgb, toonSteps, toonSoftness);
-    
+
     // Calculate edge detection
     float normalEdgeCoefficient = .3;
     float depthEdgeCoefficient = .4;
     float dei = depthEdgeIndicator();
     float nei = normalEdgeIndicator();
-    
+
     // Apply edges as darkening - edges should be pure black
     float coefficient = dei > 0.0 ? (1.0 - depthEdgeCoefficient * dei) : (1.0 + normalEdgeCoefficient * nei);
-    
+
     // Mix between toon color and black based on edge strength
     vec3 finalColor = toonColor * coefficient;
-    
+
     gl_FragColor = vec4(finalColor, texel.a);
 }

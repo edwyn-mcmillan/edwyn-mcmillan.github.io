@@ -5,7 +5,6 @@ import groundColorGlsl from "../shaders/groundColor.glsl?raw";
 import grassVertexUniforms from "../shaders/grassVertex.glsl?raw";
 import grassProjectVertex from "../shaders/grassProjectVertex.glsl?raw";
 import grassFragmentHeader from "../shaders/grassFragment.glsl?raw";
-import cloudShadowGlsl from "../shaders/cloudShadow.glsl?raw";
 
 export interface GrassSystemParams {
   count: number;
@@ -86,10 +85,7 @@ export class GrassSystem {
     });
   }
 
-  private setupAccentGrass(
-    accentCount: number,
-    geometry: THREE.PlaneGeometry,
-  ) {
+  private setupAccentGrass(accentCount: number, geometry: THREE.PlaneGeometry) {
     this.accentMaterial = this.createGrassMaterial(
       this.params.accentGrassTexturePath,
       this.params.accentColor,
@@ -129,14 +125,12 @@ export class GrassSystem {
       shader.uniforms.color1 = { value: this.params.groundColors[0] };
       shader.uniforms.color2 = { value: this.params.groundColors[1] };
       shader.uniforms.color3 = { value: this.params.groundColors[2] };
-      shader.uniforms.cloudTime = { value: 0 };
-
       material.userData.shader = shader;
 
       // Inject uniforms, noise functions, ground color, and cloud shadow before main()
       shader.vertexShader = shader.vertexShader.replace(
         "void main() {",
-        `uniform float cloudTime;\n${grassVertexUniforms}\n${noiseGlsl}\n${groundColorGlsl}\n${cloudShadowGlsl}\nvoid main() {`,
+        `${grassVertexUniforms}\n${noiseGlsl}\n${groundColorGlsl}\nvoid main() {`,
       );
 
       // Replace projection with wind animation + billboarding + ground color sampling
@@ -156,7 +150,7 @@ export class GrassSystem {
         "#include <color_fragment>",
         `
         #include <color_fragment>
-        diffuseColor.rgb *= vGroundColor * vCloudShadow;
+        diffuseColor.rgb *= vGroundColor;
         diffuseColor.a *= vEdgeFade;
         `,
       );
@@ -239,15 +233,6 @@ export class GrassSystem {
     this.updateShaderUniforms(this.material, camera);
     if (this.accentMaterial) {
       this.updateShaderUniforms(this.accentMaterial, camera);
-    }
-  }
-
-  updateCloudTime(time: number): void {
-    for (const mat of this.getMaterials()) {
-      const shader = mat.userData.shader;
-      if (shader?.uniforms.cloudTime) {
-        shader.uniforms.cloudTime.value = time;
-      }
     }
   }
 
