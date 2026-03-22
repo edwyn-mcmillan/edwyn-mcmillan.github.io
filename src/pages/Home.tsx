@@ -2,12 +2,17 @@ import { useEffect, useRef, useState } from "react";
 import { PixelScene } from "../three/PixelScene";
 import { NavBar } from "../components/NavBar";
 import { AboutPage } from "../components/AboutPage";
+import { ProjectsPage } from "../components/ProjectsPage";
 import { PanHint } from "../components/PanHint";
+
+export type Page = "home" | "about" | "projects";
 
 export function Home() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<PixelScene | null>(null);
-  const [page, setPage] = useState<"home" | "about">("home");
+  const [page, setPage] = useState<Page>("home");
+  const [panHintVisible, setPanHintVisible] = useState(true);
+  const navTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -22,18 +27,31 @@ export function Home() {
     };
   }, []);
 
-  const handleNavigate = (target: string) => {
+  const handleNavigate = (target: Page) => {
     const scene = sceneRef.current;
-    if (!scene) return;
+    if (!scene || target === page) return;
 
-    if (target === "about") {
-      scene.zoomToShape();
-      setTimeout(() => setPage("about"), 1200);
+    if (navTimeout.current) {
+      clearTimeout(navTimeout.current);
+      navTimeout.current = null;
     }
 
     if (target === "home") {
       scene.zoomOut();
       setPage("home");
+      setPanHintVisible(true);
+      return;
+    }
+
+    setPanHintVisible(false);
+    if (page !== "home") setPage("home");
+
+    if (target === "about") {
+      scene.zoomToShape();
+      navTimeout.current = setTimeout(() => setPage("about"), 1200);
+    } else if (target === "projects") {
+      scene.zoomToGrass();
+      navTimeout.current = setTimeout(() => setPage("projects"), 1200);
     }
   };
 
@@ -45,7 +63,8 @@ export function Home() {
       />
       <NavBar currentPage={page} onNavigate={handleNavigate} />
       <AboutPage visible={page === "about"} />
-      <PanHint visible={page === "home"} />
+      <ProjectsPage visible={page === "projects"} />
+      <PanHint visible={panHintVisible} />
     </>
   );
 }

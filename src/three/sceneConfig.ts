@@ -10,7 +10,7 @@ export const sceneConfig = {
     zoomedPixelSize: 1.5,
     toonSoftness: 0.05,
     toonSteps: 8,
-    bloom: { intensity: 0.8, threshold: 0.5 },
+    bloom: { intensity: 1.1, threshold: 0.3 },
   },
 
   colors: {
@@ -31,11 +31,16 @@ export const sceneConfig = {
 
   crystal: {
     radius: 0.8,
-    emissive: 0x1a0a66,
-    emissiveIntensity: 0.9,
+    emissive: 0x0044ff,
+    emissiveIntensity: 2.5,
     shininess: 10,
     specular: 0x007dff,
     baseY: 4.5,
+    glow: {
+      pulseSpeed: 1.4,
+      pulseAmount: 0.18,
+      shadowEmissiveBoost: 1.2,
+    },
     animation: {
       cycleSpeed: 1,
       fastSpin: 2,
@@ -48,9 +53,10 @@ export const sceneConfig = {
       bounceSpeed: 1,
     },
     light: {
-      intensityScale: 0.6,
-      intensityMin: 70,
-      intensityMax: 170,
+      intensityScale: 1.4,
+      intensityMin: 40,
+      intensityMax: 100,
+      shadowBoost: 2.8,
     },
   },
 
@@ -109,7 +115,7 @@ export const sceneConfig = {
       intensity: 1.8,
       position: new THREE.Vector3(-8, 12, -15),
     },
-    shape: { color: 0x4488ff, intensity: 1.2, distance: 8, decay: 1.5 },
+    shape: { color: 0x3377ff, intensity: 1.2, distance: 10, decay: 2.5 },
   },
 
   lightning: {
@@ -133,6 +139,12 @@ export const sceneConfig = {
       new THREE.Vector3(-2, -2, 2),
       new THREE.Vector3(2, -2, -2),
     ],
+  },
+
+  grassView: {
+    cameraPosition: new THREE.Vector3(5, 6, 8),
+    target: new THREE.Vector3(5, -1.5, 5),
+    transitionDuration: 1.8,
   },
 
   pillar: {

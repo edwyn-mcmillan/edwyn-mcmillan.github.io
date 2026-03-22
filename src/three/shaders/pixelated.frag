@@ -8,6 +8,8 @@ uniform float toonSoftness;
 uniform float cloudTime;
 uniform float bloomIntensity;
 uniform float bloomThreshold;
+uniform bool edgeDetectionEnabled;
+uniform bool bloomEnabled;
 uniform mat4 inverseProjectionMatrix;
 uniform mat4 inverseViewMatrix;
 
@@ -155,49 +157,54 @@ void main() {
     if (depth < 1.0) { // only shadow actual geometry, not sky
         vec3 worldPos = reconstructWorldPos(vUv, depth);
         float shadow = cloudShadow(worldPos.xz, cloudTime);
-        texel.rgb *= shadow;
+        // Use max channel rather than luminance so saturated colours (blue
+        // crystal, cyan lightning) are correctly identified as emissive even
+        // though their perceived luminance is low.
+        float pixelBrightness = max(texel.r, max(texel.g, texel.b));
+        float shadowResistance = smoothstep(0.3, 0.7, pixelBrightness);
+        texel.rgb *= mix(shadow, 1.0, shadowResistance);
     }
 
     // Apply toon shading to the shadowed color
     vec3 toonColor = applyToonShading(texel.rgb, toonSteps, toonSoftness);
 
-    // Calculate edge detection
-    float normalEdgeCoefficient = .3;
-    float depthEdgeCoefficient = .4;
-    float dei = depthEdgeIndicator();
-    float nei = normalEdgeIndicator();
+    vec3 finalColor = toonColor;
 
-    // Apply edges as darkening - edges should be pure black
-    float coefficient = dei > 0.0 ? (1.0 - depthEdgeCoefficient * dei) : (1.0 + normalEdgeCoefficient * nei);
+    // Edge detection (conditional — skipped on low-quality tier)
+    if (edgeDetectionEnabled) {
+        float normalEdgeCoefficient = .3;
+        float depthEdgeCoefficient = .4;
+        float dei = depthEdgeIndicator();
+        float nei = normalEdgeIndicator();
 
-    // Mix between toon color and black based on edge strength
-    vec3 finalColor = toonColor * coefficient;
-
-    // Bloom: sample bright pixels in a cross pattern and add glow
-    vec3 bloom = vec3(0.0);
-    float totalWeight = 0.0;
-    vec2 texelSize = resolution.zw;
-
-    for (int x = -2; x <= 2; x++) {
-        for (int y = -2; y <= 2; y++) {
-            if (x == 0 && y == 0) continue;
-            // Cross pattern: skip corners of the 5x5 grid
-            if (abs(x) == 2 && abs(y) == 2) continue;
-            if (abs(x) == 1 && abs(y) == 2) continue;
-            if (abs(x) == 2 && abs(y) == 1) continue;
-
-            float dist = length(vec2(float(x), float(y)));
-            float weight = 1.0 / (1.0 + dist * dist);
-
-            vec3 sampleColor = texture2D(tDiffuse, vUv + vec2(float(x), float(y)) * texelSize).rgb;
-            float sampleLum = getLuminance(sampleColor);
-            vec3 bright = sampleColor * max(0.0, sampleLum - bloomThreshold);
-            bloom += bright * weight;
-            totalWeight += weight;
-        }
+        float coefficient = dei > 0.0 ? (1.0 - depthEdgeCoefficient * dei) : (1.0 + normalEdgeCoefficient * nei);
+        finalColor = toonColor * coefficient;
     }
-    bloom /= totalWeight;
-    finalColor += bloom * bloomIntensity;
+
+    // Bloom (conditional — skipped on low-quality tier)
+    if (bloomEnabled) {
+        vec3 bloom = vec3(0.0);
+        float totalWeight = 0.0;
+        vec2 texelSize = resolution.zw;
+
+        for (int x = -3; x <= 3; x++) {
+            for (int y = -3; y <= 3; y++) {
+                if (x == 0 && y == 0) continue;
+                float dist = length(vec2(float(x), float(y)));
+                if (dist > 3.0) continue;
+
+                float weight = 1.0 / (1.0 + dist * dist);
+
+                vec3 sampleColor = texture2D(tDiffuse, vUv + vec2(float(x), float(y)) * texelSize).rgb;
+                float sampleLum = getLuminance(sampleColor);
+                vec3 bright = sampleColor * max(0.0, sampleLum - bloomThreshold);
+                bloom += bright * weight;
+                totalWeight += weight;
+            }
+        }
+        bloom /= totalWeight;
+        finalColor += bloom * bloomIntensity;
+    }
 
     gl_FragColor = vec4(finalColor, texel.a);
 }

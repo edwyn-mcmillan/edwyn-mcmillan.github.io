@@ -1,3 +1,9 @@
+/* ── Viewport-relative base font ── */
+/* 1vw scales every em with the viewport: 19px @1920, 38px @3840, floored at 13px for phones */
+html {
+  font-size: max(13px, 1vw);
+}
+
 /* ── Nav ── */
 .nav {
   position: fixed;
@@ -51,7 +57,10 @@
   border-color: rgba(255, 255, 255, 0.4);
 }
 
-/* ── About overlay ── */
+/* ── About / Projects overlay ── */
+/* align-items: flex-start + padding-top keeps the panel below the nav at any
+   zoom level. Vertical centering breaks when the browser zoom shrinks the
+   effective viewport and the panel collides with the nav. */
 .about-overlay {
   position: fixed;
   inset: 0;
@@ -59,6 +68,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 4em 0 1em;
   pointer-events: none;
   font-family: "Press Start 2P", monospace;
 }
@@ -67,7 +77,7 @@
   pointer-events: auto;
   max-width: 40em;
   width: 90%;
-  max-height: 75vh;
+  max-height: calc(100vh - 7em);
   overflow: hidden;
   padding: 0;
   background: rgba(255, 255, 255, 0.08);
@@ -166,6 +176,60 @@
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+/* ── Project card ── */
+.project-card {
+  padding-top: 1.75em;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.project-card__title {
+  color: #e8e8ec;
+  font-family: "Press Start 2P", monospace;
+  font-size: 0.625em;
+  margin: 0 0 1.25em 0;
+  letter-spacing: 0.0625em;
+}
+
+.project-card__image-wrap {
+  width: 100%;
+  margin-bottom: 1.25em;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.project-card__image {
+  display: block;
+  width: 100%;
+  image-rendering: pixelated;
+}
+
+.project-card__image-placeholder {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.project-card__description {
+  color: rgba(255, 255, 255, 0.65);
+  font-family: "Fira Code", monospace;
+  font-size: 0.6875em;
+  line-height: 2;
+  margin: 0 0 1.125em 0;
+}
+
+.project-card__link {
+  display: inline-block;
+  color: rgba(255, 255, 255, 0.8);
+  font-family: "Fira Code", monospace;
+  font-size: 0.6875em;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  transition: border-color 0.2s;
+}
+
+.project-card__link:hover {
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
 /* ── Narrow displays ── */
 @media (max-width: 480px) {
   .nav {
@@ -185,8 +249,7 @@
   }
 
   .about-overlay {
-    justify-content: flex-start;
-    padding: 0 0.625em;
+    padding: 4em 0.625em 1em;
   }
 
   .about-content {

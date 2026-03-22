@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 
 interface PanHintProps {
   visible: boolean;
@@ -7,8 +7,6 @@ interface PanHintProps {
 export function PanHint({ visible }: PanHintProps) {
   const [mounted, setMounted] = useState(false);
   const [show, setShow] = useState(false);
-
-  const dismiss = useCallback(() => setShow(false), []);
 
   useEffect(() => {
     if (!visible) {
@@ -20,7 +18,7 @@ export function PanHint({ visible }: PanHintProps) {
     // small delay so the fade-in transition triggers after mount
     const rafId = requestAnimationFrame(() => setShow(true));
 
-    // auto-hide after 3s
+    // auto-hide after 5s
     const timer = setTimeout(() => setShow(false), 5000);
 
     return () => {
@@ -32,9 +30,10 @@ export function PanHint({ visible }: PanHintProps) {
   // dismiss on any pointer interaction
   useEffect(() => {
     if (!show) return;
-    window.addEventListener("pointerdown", dismiss);
-    return () => window.removeEventListener("pointerdown", dismiss);
-  }, [show, dismiss]);
+    const handler = () => setShow(false);
+    window.addEventListener("pointerdown", handler);
+    return () => window.removeEventListener("pointerdown", handler);
+  }, [show]);
 
   // unmount after fade-out
   useEffect(() => {

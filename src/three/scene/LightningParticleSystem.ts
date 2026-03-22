@@ -23,6 +23,8 @@ interface LightningBolt {
   lifetime: number;
   progress: number;
   line: THREE.LineSegments;
+  positionBuffer: Float32Array;
+  positionAttribute: THREE.BufferAttribute;
   restrikes: number;
   restrikeTimer: number;
   restrikePhase: number; // 0 = visible, 1 = dark
@@ -137,7 +139,21 @@ export class LightningParticleSystem {
       }
     }
 
+    // Pre-allocate buffer: main segments + worst-case branches
+    // Each line segment = 2 vertices * 3 floats = 6 floats
+    const branchSegCount = Math.floor(this.params.segmentsPerBolt * 0.3);
+    const maxLineSegments =
+      this.params.segmentsPerBolt + // main bolt
+      this.params.segmentsPerBolt * branchSegCount; // worst-case branches
+    const bufferSize = maxLineSegments * 6;
+    const positionBuffer = new Float32Array(bufferSize);
+    const positionAttribute = new THREE.BufferAttribute(positionBuffer, 3);
+    positionAttribute.setUsage(THREE.DynamicDrawUsage);
+
     const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", positionAttribute);
+    geometry.setDrawRange(0, 0);
+
     const material = new THREE.LineBasicMaterial({
       color: this.params.color,
       transparent: true,
@@ -157,6 +173,8 @@ export class LightningParticleSystem {
       lifetime: this.params.boltLifetime * (0.8 + Math.random() * 0.4),
       progress: 0,
       line,
+      positionBuffer,
+      positionAttribute,
       restrikes: willRestrike ? 2 + Math.floor(Math.random() * 2) : 0, // 2-3 restrikes
       restrikeTimer: 0,
       restrikePhase: 0, // start visible
@@ -164,34 +182,42 @@ export class LightningParticleSystem {
   }
 
   private updateBoltGeometry(bolt: LightningBolt) {
-    const visibleCount = Math.floor(bolt.progress * bolt.segments.length);
+    const visibleCount = Math.min(
+      Math.floor(bolt.progress * bolt.segments.length),
+      bolt.segments.length,
+    );
+    const buf = bolt.positionBuffer;
+    let offset = 0;
 
-    const positions: number[] = [];
-
-    const pushSegments = (pts: THREE.Vector3[]) => {
-      for (let i = 0; i < pts.length - 1; i++) {
-        positions.push(
-          pts[i].x,
-          pts[i].y,
-          pts[i].z,
-          pts[i + 1].x,
-          pts[i + 1].y,
-          pts[i + 1].z,
-        );
-      }
-    };
-
-    pushSegments(bolt.segments.slice(0, visibleCount));
-
-    for (const branch of bolt.branches) {
-      pushSegments(branch);
+    // Write main segments into pre-allocated buffer
+    for (let i = 0; i < visibleCount - 1; i++) {
+      const a = bolt.segments[i];
+      const b = bolt.segments[i + 1];
+      buf[offset++] = a.x;
+      buf[offset++] = a.y;
+      buf[offset++] = a.z;
+      buf[offset++] = b.x;
+      buf[offset++] = b.y;
+      buf[offset++] = b.z;
     }
 
-    bolt.line.geometry.setAttribute(
-      "position",
-      new THREE.Float32BufferAttribute(positions, 3),
-    );
+    // Write branch segments
+    for (const branch of bolt.branches) {
+      for (let i = 0; i < branch.length - 1; i++) {
+        const a = branch[i];
+        const b = branch[i + 1];
+        buf[offset++] = a.x;
+        buf[offset++] = a.y;
+        buf[offset++] = a.z;
+        buf[offset++] = b.x;
+        buf[offset++] = b.y;
+        buf[offset++] = b.z;
+      }
+    }
 
+    const vertexCount = offset / 3;
+    bolt.positionAttribute.needsUpdate = true;
+    bolt.line.geometry.setDrawRange(0, vertexCount);
     bolt.line.geometry.computeBoundingSphere();
 
     const time = bolt.age / bolt.lifetime;

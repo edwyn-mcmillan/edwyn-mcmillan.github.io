@@ -28,6 +28,8 @@ export interface PixelatedPassParams {
   toonSoftness: number;
   bloomIntensity: number;
   bloomThreshold: number;
+  edgeDetectionEnabled?: boolean;
+  bloomEnabled?: boolean;
 }
 
 export class RenderPixelatedPass extends Pass {
@@ -44,6 +46,8 @@ export class RenderPixelatedPass extends Pass {
   public toonSoftness: number;
   public bloomIntensity: number;
   public bloomThreshold: number;
+  public edgeDetectionEnabled: boolean;
+  public bloomEnabled: boolean;
   gui?: GUI;
 
   constructor(
@@ -60,6 +64,8 @@ export class RenderPixelatedPass extends Pass {
     this.toonSoftness = params.toonSoftness;
     this.bloomIntensity = params.bloomIntensity;
     this.bloomThreshold = params.bloomThreshold;
+    this.edgeDetectionEnabled = params.edgeDetectionEnabled ?? true;
+    this.bloomEnabled = params.bloomEnabled ?? true;
 
     this.fsQuad = new FullScreenQuad(this.material());
     this.scene = scene;
@@ -116,6 +122,8 @@ export class RenderPixelatedPass extends Pass {
     uniforms.toonSoftness.value = this.toonSoftness;
     uniforms.bloomIntensity.value = this.bloomIntensity;
     uniforms.bloomThreshold.value = this.bloomThreshold;
+    uniforms.edgeDetectionEnabled.value = this.edgeDetectionEnabled;
+    uniforms.bloomEnabled.value = this.bloomEnabled;
   }
 
   updateCloudTime(time: number) {
@@ -130,23 +138,25 @@ export class RenderPixelatedPass extends Pass {
     renderer.render(this.scene, this.camera);
 
     // Render normals for edge detection — only default layer (excludes grass/lightning)
-    // Disable shadows during normal pass to prevent artifacts on receiveShadow objects
-    renderer.setRenderTarget(this.normalRenderTarget);
-    const savedLayers = this.camera.layers.mask;
-    this.camera.layers.set(LAYER_DEFAULT);
+    // Skip entirely when edge detection is disabled (saves a full scene render)
+    if (this.edgeDetectionEnabled) {
+      renderer.setRenderTarget(this.normalRenderTarget);
+      const savedLayers = this.camera.layers.mask;
+      this.camera.layers.set(LAYER_DEFAULT);
 
-    const savedShadowEnabled = renderer.shadowMap.enabled;
-    renderer.shadowMap.enabled = false;
+      const savedShadowEnabled = renderer.shadowMap.enabled;
+      renderer.shadowMap.enabled = false;
 
-    const overrideMaterial_old = this.scene.overrideMaterial;
-    this.scene.overrideMaterial = this.normalMaterial;
-    renderer.render(this.scene, this.camera);
-    this.scene.overrideMaterial = overrideMaterial_old;
+      const overrideMaterial_old = this.scene.overrideMaterial;
+      this.scene.overrideMaterial = this.normalMaterial;
+      renderer.render(this.scene, this.camera);
+      this.scene.overrideMaterial = overrideMaterial_old;
 
-    renderer.shadowMap.enabled = savedShadowEnabled;
+      renderer.shadowMap.enabled = savedShadowEnabled;
 
-    // Restore camera layers to see all objects
-    this.camera.layers.mask = savedLayers;
+      // Restore camera layers to see all objects
+      this.camera.layers.mask = savedLayers;
+    }
 
     const uniforms = this.getUniforms();
     uniforms.tDiffuse.value = this.rgbRenderTarget.texture;
@@ -218,6 +228,8 @@ export class RenderPixelatedPass extends Pass {
         toonSoftness: { value: this.toonSoftness },
         bloomIntensity: { value: this.bloomIntensity },
         bloomThreshold: { value: this.bloomThreshold },
+        edgeDetectionEnabled: { value: this.edgeDetectionEnabled },
+        bloomEnabled: { value: this.bloomEnabled },
         cloudTime: { value: 0 },
         inverseProjectionMatrix: { value: new THREE.Matrix4() },
         inverseViewMatrix: { value: new THREE.Matrix4() },

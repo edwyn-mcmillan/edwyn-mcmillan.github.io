@@ -1,11 +1,45 @@
 import * as THREE from "three";
 import { RenderPixelatedPass } from "./renderer/RenderPixelatedPass";
+
+// --- Cloud shadow sampler (mirrors pixelated.frag) ---
+function _hash(px: number, py: number): number {
+  return (((Math.sin(px * 127.1 + py * 311.7) * 43758.5453) % 1) + 1) % 1;
+}
+function _valueNoise(px: number, py: number): number {
+  const ix = Math.floor(px), iy = Math.floor(py);
+  const fx = px - ix, fy = py - iy;
+  const ux = fx * fx * (3 - 2 * fx), uy = fy * fy * (3 - 2 * fy);
+  const a = _hash(ix, iy), b = _hash(ix + 1, iy);
+  const c = _hash(ix, iy + 1), d = _hash(ix + 1, iy + 1);
+  return a + (b - a) * ux + (c - a + (a - b - c + d) * ux) * uy;
+}
+function _fbm(px: number, py: number): number {
+  let v = 0, amp = 1, freq = 1, max = 0;
+  for (let i = 0; i < 4; i++) {
+    v += _valueNoise(px * freq, py * freq) * amp;
+    max += amp; amp *= 0.5; freq *= 2;
+  }
+  return v / max;
+}
+function sampleCloudShadow(wx: number, wz: number, t: number): number {
+  const ux = wx * 0.02 + t * 0.04 + 3.7;
+  const uy = wz * 0.02 + t * 0.015 + 9.2;
+  const n = _fbm(ux, uy);
+  const s = Math.max(0, Math.min(1, (n - 0.35) / 0.2));
+  return 0.55 + s * s * (3 - 2 * s) * 0.45; // mix(0.55, 1.0, smoothstep)
+}
 import { ModelLoader } from "./scene/ModelLoader";
 import { GrassSystem } from "./scene/GrassSystem";
 import { LightningParticleSystem } from "./scene/LightningParticleSystem";
 import { PixelCamera } from "./scene/PixelCamera";
 import { GroundMaterial } from "./scene/GroundMaterial";
 import { sceneConfig, LAYER_NO_EDGE_DETECTION } from "./sceneConfig";
+import {
+  type QualityTier,
+  type QualitySettings,
+  detectQualityTier,
+  getQualitySettings,
+} from "./QualityTier";
 
 export class PixelScene {
   scene!: THREE.Scene;
@@ -23,6 +57,11 @@ export class PixelScene {
   clock = new THREE.Clock();
   frameId = 0;
 
+  private qualityTier!: QualityTier;
+  private qualitySettings!: QualitySettings;
+  private frameTimes: number[] = [];
+  private tierDowngraded = false;
+
   private originalCameraPos = new THREE.Vector3();
   private originalTarget = new THREE.Vector3();
   private zoomed = false;
@@ -39,6 +78,16 @@ export class PixelScene {
   constructor(canvas: HTMLCanvasElement) {
     this.setupScene();
     this.setupRenderer(canvas);
+
+    // Detect quality tier and apply settings
+    this.qualityTier = detectQualityTier(this.renderer);
+    this.qualitySettings = getQualitySettings(this.qualityTier);
+    this.applyQualitySettings();
+    console.log(
+      `[PixelScene] Quality tier: ${this.qualityTier}`,
+      this.qualitySettings,
+    );
+
     this.setupCamera(canvas);
     this.setupSceneLights();
     this.setupGround();
@@ -102,6 +151,20 @@ export class PixelScene {
       this.lightningSystem.update(delta);
 
       this.pixelPass.render(this.renderer);
+
+      // Frame-time fallback: measure first 60 frames, downgrade if < 30 FPS
+      if (!this.tierDowngraded && this.frameTimes.length < 60) {
+        this.frameTimes.push(delta);
+        if (this.frameTimes.length === 60) {
+          const avg =
+            this.frameTimes.reduce((a, b) => a + b, 0) /
+            this.frameTimes.length;
+          if (avg > 0.033) {
+            this.downgradeTier();
+          }
+        }
+      }
+
       this.frameId = requestAnimationFrame(loop);
     };
     loop();
@@ -137,6 +200,17 @@ export class PixelScene {
       sceneConfig.render.pixelSize,
       sceneConfig.render.zoomedPixelSize,
       sceneConfig.zoom.transitionDuration,
+    );
+  }
+
+  zoomToGrass(): void {
+    this.zoomed = false;
+    this.zoomBlendTarget = 0;
+    const { grassView } = sceneConfig;
+    this.pixelCamera.transitionTo(
+      grassView.cameraPosition.clone(),
+      grassView.target.clone(),
+      grassView.transitionDuration,
     );
   }
 
@@ -186,6 +260,41 @@ export class PixelScene {
     this.renderer.setSize(width, height);
   }
 
+  private downgradeTier(): void {
+    const tierOrder: QualityTier[] = ["high", "medium", "low"];
+    const currentIdx = tierOrder.indexOf(this.qualityTier);
+    if (currentIdx >= tierOrder.length - 1) return; // already at lowest
+
+    this.tierDowngraded = true;
+    this.qualityTier = tierOrder[currentIdx + 1];
+    this.qualitySettings = getQualitySettings(this.qualityTier);
+    console.warn(
+      `[PixelScene] Performance below 30 FPS — downgrading to "${this.qualityTier}" tier`,
+    );
+
+    // Re-apply runtime-adjustable settings
+    this.applyQualitySettings();
+    this.pixelPass.edgeDetectionEnabled =
+      this.qualitySettings.edgeDetectionEnabled;
+    this.pixelPass.bloomEnabled = this.qualitySettings.bloomEnabled;
+  }
+
+  private applyQualitySettings(): void {
+    const s = this.qualitySettings;
+    this.renderer.shadowMap.type = s.shadowMapType;
+
+    // Update shadow map size on all directional lights already in the scene
+    this.scene.traverse((child) => {
+      if (child instanceof THREE.DirectionalLight && child.shadow) {
+        child.shadow.mapSize.set(s.shadowMapSize, s.shadowMapSize);
+        if (child.shadow.map) {
+          child.shadow.map.dispose();
+          child.shadow.map = null!;
+        }
+      }
+    });
+  }
+
   private setupScene(): void {
     this.scene = new THREE.Scene();
   }
@@ -196,9 +305,12 @@ export class PixelScene {
       antialias: false,
     });
     this.renderer.shadowMap.enabled = true;
+    // Shadow map type is set by applyQualitySettings() after tier detection
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.setPixelRatio(window.devicePixelRatio);
+    // DPR capped to 1 for all tiers: render targets are 320x180, higher DPR
+    // only inflates the final fullscreen quad blit with zero visual benefit.
+    this.renderer.setPixelRatio(1);
   }
 
   private setupCamera(canvas: HTMLCanvasElement): void {
@@ -216,6 +328,8 @@ export class PixelScene {
         toonSteps: sceneConfig.render.toonSteps,
         bloomIntensity: sceneConfig.render.bloom.intensity,
         bloomThreshold: sceneConfig.render.bloom.threshold,
+        edgeDetectionEnabled: this.qualitySettings.edgeDetectionEnabled,
+        bloomEnabled: this.qualitySettings.bloomEnabled,
       },
     );
     this.pixelPass.renderToScreen = true;
@@ -273,11 +387,34 @@ export class PixelScene {
       0.1,
     );
     this.shapeLight.position.copy(this.shape.position);
-    this.shapeLight.intensity = THREE.MathUtils.clamp(
+
+    const glowPulse =
+      Math.sin(this.clock.elapsedTime * sceneConfig.crystal.glow.pulseSpeed) *
+        0.5 +
+      0.5;
+
+    // shadowness: 0 = fully lit, 1 = fully in cloud shadow
+    const shadow = sampleCloudShadow(
+      this.shape.position.x,
+      this.shape.position.z,
+      this.clock.elapsedTime,
+    );
+    const shadowness = 1.0 - (shadow - 0.55) / 0.45;
+
+    const { glow } = sceneConfig.crystal;
+    const mat = this.shape.material as THREE.MeshPhongMaterial;
+    mat.emissiveIntensity =
+      sceneConfig.crystal.emissiveIntensity *
+      (1.0 + glowPulse * glow.pulseAmount) *
+      (1.0 + shadowness * glow.shadowEmissiveBoost);
+
+    const baseLightIntensity = THREE.MathUtils.clamp(
       (1 / distanceToGround) * light.intensityScale,
       light.intensityMin,
       light.intensityMax,
     );
+    this.shapeLight.intensity =
+      baseLightIntensity * (1.0 + shadowness * light.shadowBoost);
   }
 
   private setupGround(): void {
@@ -305,7 +442,7 @@ export class PixelScene {
   private setupGrass(): void {
     const { grass, colors, ground } = sceneConfig;
     this.grassSystem = new GrassSystem({
-      count: grass.count,
+      count: this.qualitySettings.grassCount,
       areaSize: grass.areaSize,
       groundY: ground.y,
       grassTexturePath: grass.texturePath,
@@ -348,8 +485,8 @@ export class PixelScene {
     keyLight.shadow.camera.near = lighting.key.shadow.near;
     keyLight.shadow.camera.far = lighting.key.shadow.far;
 
-    keyLight.shadow.mapSize.width = lighting.key.shadow.mapSize;
-    keyLight.shadow.mapSize.height = lighting.key.shadow.mapSize;
+    keyLight.shadow.mapSize.width = this.qualitySettings.shadowMapSize;
+    keyLight.shadow.mapSize.height = this.qualitySettings.shadowMapSize;
 
     keyLight.shadow.bias = lighting.key.shadow.bias;
     keyLight.shadow.normalBias = 0.5;
@@ -443,13 +580,14 @@ export class PixelScene {
     }
 
     this.scatterInRing(baseMeshes, {
-      count: trees.count,
+      count: this.qualitySettings.treeCount,
       radius: trees.radius,
       radiusJitter: trees.radiusJitter,
       scaleMin: trees.scaleMin,
       scaleMax: trees.scaleMax,
       groundY: ground.y,
       minSpacing: 3,
+      castShadow: this.qualitySettings.treesCastShadow,
     });
   }
 
@@ -465,6 +603,7 @@ export class PixelScene {
       groundY: number;
       angleJitter?: number;
       minSpacing?: number;
+      castShadow?: boolean;
     },
   ): void {
     const goldenAngle = Math.PI * (3 - Math.sqrt(5));
@@ -491,8 +630,9 @@ export class PixelScene {
       placed.push({ x, z });
 
       const clone = bases[i % bases.length].clone();
+      const shouldCastShadow = opts.castShadow !== false;
       clone.traverse((child) => {
-        child.castShadow = true;
+        child.castShadow = shouldCastShadow;
         child.receiveShadow = true;
       });
       clone.position.set(x, opts.groundY, z);

@@ -28,7 +28,7 @@ export function AboutPage({ visible }: AboutPageProps) {
         setMounted(false);
       }
     }
-  }, [visible]);
+  }, [visible, mounted]);
 
   if (!mounted) return null;
 
